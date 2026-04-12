@@ -238,10 +238,27 @@ const pausePanel = document.getElementById('pausePanel');
 const resumeBtn = document.getElementById('resumeBtn');
 const homeBtn = document.getElementById('homeBtn');
 
+let autoReloadTimer = null;
+let hasConnected = false;
+
 function connectWebSocket() {
   ws = new WebSocket(wsUrl);
 
+  // If we haven't connected after 4 seconds, reload the page
+  if (!hasConnected && !autoReloadTimer) {
+    autoReloadTimer = setTimeout(() => {
+      if (!hasConnected) {
+        window.location.reload();
+      }
+    }, 4000);
+  }
+
   ws.onopen = () => {
+    hasConnected = true;
+    if (autoReloadTimer) {
+      clearTimeout(autoReloadTimer);
+      autoReloadTimer = null;
+    }
     statusText.textContent = 'Connected';
     setTimeout(() => { statusText.textContent = 'Ready'; }, 800);
     if (wsReconnectTimer) {
