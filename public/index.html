@@ -199,10 +199,23 @@
   /* Onboarding footer */
   .onboarding-footer {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    padding-top: 2vh;
-    height: 10vh;
+    padding-top: 1vh;
+    height: 12vh;
+    gap: 1.2vh;
+  }
+
+  .controller-status {
+    font-size: clamp(22px, 2.4vw, 38px);
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    transition: all 0.3s ease;
+  }
+
+  .controller-status.connected {
+    color: #22c55e;
   }
 
   .enter-hint {
@@ -212,8 +225,14 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: softPulse 2.5s ease infinite;
     letter-spacing: -0.01em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .enter-hint.visible {
+    opacity: 1;
+    animation: softPulse 2.5s ease infinite;
   }
 
   @keyframes softPulse {
@@ -503,7 +522,8 @@
       </div>
 
       <div class="onboarding-footer">
-        <div class="enter-hint" id="enterHint">Press OK on your controller to start</div>
+        <div class="controller-status" id="controllerStatus">Waiting for controller...</div>
+        <div class="enter-hint" id="enterHint">Press OK to start</div>
       </div>
     </div>
 
@@ -613,8 +633,11 @@
 
 <script>
 const enterHint = document.getElementById("enterHint");
+const controllerStatus = document.getElementById("controllerStatus");
 const qrImage = document.getElementById("qrImage");
 const manualUrl = document.getElementById("manualUrl");
+
+let controllerConnected = false;
 
 const onboardingScreen = document.getElementById("onboardingScreen");
 const menuScreen = document.getElementById("menuScreen");
@@ -682,6 +705,22 @@ function connectWebSocket() {
 
     if (data.type === 'reload') {
       window.location.reload();
+      return;
+    }
+
+    if (data.type === 'client_count') {
+      // count includes this TV client, so > 1 means a controller is connected
+      const hasController = data.count > 1;
+      controllerConnected = hasController;
+      if (hasController) {
+        controllerStatus.textContent = 'Controller connected!';
+        controllerStatus.classList.add('connected');
+        enterHint.classList.add('visible');
+      } else {
+        controllerStatus.textContent = 'Waiting for controller...';
+        controllerStatus.classList.remove('connected');
+        enterHint.classList.remove('visible');
+      }
       return;
     }
 
@@ -897,7 +936,7 @@ function activateSettingsItem() {
 }
 
 function updateOnboardingStatus() {
-  // Enter hint is always visible via CSS animation
+  // Status is now driven by client_count WebSocket messages
 }
 
 function handlePressedEvents() {

@@ -145,9 +145,20 @@ function broadcastJSON(obj) {
   broadcastRaw(JSON.stringify(obj));
 }
 
+function getClientCount() {
+  return allClients().filter(c => c.readyState === WebSocket.OPEN).length;
+}
+
+function broadcastClientCount() {
+  broadcastJSON({ type: 'client_count', count: getClientCount() });
+}
+
 function attachSocketHandler(socketServer) {
   socketServer.on('connection', (ws) => {
     ws.send(JSON.stringify(lastPauseState));
+
+    // Let everyone know a new client connected
+    setTimeout(broadcastClientCount, 100);
 
     ws.on('message', (message) => {
       const text = message.toString();
@@ -163,6 +174,10 @@ function attachSocketHandler(socketServer) {
       }
 
       broadcastRaw(text);
+    });
+
+    ws.on('close', () => {
+      setTimeout(broadcastClientCount, 100);
     });
   });
 }

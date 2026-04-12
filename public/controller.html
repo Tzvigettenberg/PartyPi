@@ -130,6 +130,29 @@
     text-align: center;
   }
 
+  .conn-status {
+    font-size: 13px;
+    text-align: center;
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .conn-status.connecting {
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+  }
+
+  .conn-status.connected {
+    background: rgba(34,197,94,0.15);
+    color: #22c55e;
+  }
+
+  .conn-status.disconnected {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+  }
+
   .pause-panel {
     width: 100%;
     background: rgba(255,255,255,0.08);
@@ -199,6 +222,7 @@
       </div>
 
       <div class="status" id="statusText">Ready</div>
+      <div class="conn-status connecting" id="connStatus">Connecting...</div>
 
       <div class="pause-panel" id="pausePanel">
         <div class="pause-title">Game Paused</div>
@@ -237,44 +261,59 @@ const pauseBtn = document.getElementById('pauseBtn');
 const pausePanel = document.getElementById('pausePanel');
 const resumeBtn = document.getElementById('resumeBtn');
 const homeBtn = document.getElementById('homeBtn');
+const connStatus = document.getElementById('connStatus');
 
-let autoReloadTimer = null;
-let hasConnected = false;
+let retryCount = 0;
+let hasEverConnected = false;
+
+function getRetryDelay() {
+  // Fast at first (1s), slows down: 1s, 1s, 1s, 2s, 2s, 3s, 4s, 5s... max 8s
+  if (retryCount < 3) return 1000;
+  if (retryCount < 5) return 2000;
+  if (retryCount < 7) return 3000;
+  if (retryCount < 10) return 5000;
+  return 8000;
+}
+
+function setConnStatus(state) {
+  connStatus.className = 'conn-status ' + state;
+  if (state === 'connecting') connStatus.textContent = 'Connecting...';
+  else if (state === 'connected') connStatus.textContent = 'Connected';
+  else if (state === 'disconnected') connStatus.textContent = 'Disconnected — retrying...';
+}
 
 function connectWebSocket() {
-  ws = new WebSocket(wsUrl);
-
-  // If we haven't connected after 4 seconds, reload the page
-  if (!hasConnected && !autoReloadTimer) {
-    autoReloadTimer = setTimeout(() => {
-      if (!hasConnected) {
-        window.location.reload();
-      }
-    }, 4000);
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+    return;
   }
 
+  setConnStatus('connecting');
+  ws = new WebSocket(wsUrl);
+
   ws.onopen = () => {
-    hasConnected = true;
-    if (autoReloadTimer) {
-      clearTimeout(autoReloadTimer);
-      autoReloadTimer = null;
-    }
-    statusText.textContent = 'Connected';
-    setTimeout(() => { statusText.textContent = 'Ready'; }, 800);
+    hasEverConnected = true;
+    retryCount = 0;
+    setConnStatus('connected');
+    statusText.textContent = 'Ready';
     if (wsReconnectTimer) {
-      clearInterval(wsReconnectTimer);
+      clearTimeout(wsReconnectTimer);
       wsReconnectTimer = null;
     }
   };
 
   ws.onclose = () => {
-    statusText.textContent = 'Reconnecting...';
+    setConnStatus('disconnected');
+    retryCount++;
+    // If first connection attempt fails, reload page once (helps with cert issues)
+    if (!hasEverConnected && retryCount === 3) {
+      window.location.reload();
+      return;
+    }
     if (!wsReconnectTimer) {
-      wsReconnectTimer = setInterval(() => {
-        if (!ws || ws.readyState === WebSocket.CLOSED) {
-          connectWebSocket();
-        }
-      }, 2000);
+      wsReconnectTimer = setTimeout(() => {
+        wsReconnectTimer = null;
+        connectWebSocket();
+      }, getRetryDelay());
     }
   };
 
