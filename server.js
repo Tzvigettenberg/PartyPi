@@ -114,6 +114,11 @@ app.get('/games-list', (req, res) => {
   }
 });
 
+app.get('/reload', (req, res) => {
+  broadcastJSON({ type: 'reload' });
+  res.send('Reload signal sent');
+});
+
 app.post('/switch-to-play', (req, res) => {
   res.send('Switching to Play Mode');
   exec('/home/pi/play-mode.sh');

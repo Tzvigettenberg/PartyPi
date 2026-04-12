@@ -684,6 +684,11 @@ fetch('/games-list')
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
 
+  if (data.type === 'reload') {
+    window.location.reload();
+    return;
+  }
+
   if (data.type === 'pause_state') {
     gamePaused = !!data.paused;
     gameOverlay.classList.toggle('visible', gamePaused);
