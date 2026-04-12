@@ -215,7 +215,36 @@
 <script>
 const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsPort = location.protocol === 'https:' ? '3443' : location.port;
-const ws = new WebSocket(`${wsProtocol}//${location.hostname}:${wsPort}`);
+const wsUrl = `${wsProtocol}//${location.hostname}:${wsPort}`;
+let ws;
+let wsReconnectTimer = null;
+
+function connectWebSocket() {
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    statusText.textContent = 'Connected';
+    setTimeout(() => { statusText.textContent = 'Ready'; }, 800);
+    if (wsReconnectTimer) {
+      clearInterval(wsReconnectTimer);
+      wsReconnectTimer = null;
+    }
+  };
+
+  ws.onclose = () => {
+    statusText.textContent = 'Reconnecting...';
+    if (!wsReconnectTimer) {
+      wsReconnectTimer = setInterval(() => {
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          connectWebSocket();
+        }
+      }, 2000);
+    }
+  };
+
+  ws.onerror = () => {
+    ws.close();
+  };
 
 let state = {
   up: false,
@@ -304,12 +333,18 @@ function sendSystemAction(action) {
   }
 }
 
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  if (data.type === 'pause_state') {
-    setPauseMode(!!data.paused);
-  }
-};
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'pause_state') {
+      setPauseMode(!!data.paused);
+    }
+    if (data.type === 'reload') {
+      window.location.reload();
+    }
+  };
+}
+
+connectWebSocket();
 
 document.querySelectorAll('.dpad button').forEach(button => {
   const dir = button.dataset.dir;

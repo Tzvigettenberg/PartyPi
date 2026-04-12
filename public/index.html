@@ -650,7 +650,88 @@ let gamePaused = false;
 
 const HOME_TIMEOUT_MS = 2 * 60 * 1000;
 
-const ws = new WebSocket(`ws://${location.host}`);
+let ws;
+let wsReconnectTimer = null;
+
+function connectWebSocket() {
+  ws = new WebSocket(`ws://${location.host}`);
+
+  ws.onopen = () => {
+    if (wsReconnectTimer) {
+      clearInterval(wsReconnectTimer);
+      wsReconnectTimer = null;
+    }
+  };
+
+  ws.onclose = () => {
+    if (!wsReconnectTimer) {
+      wsReconnectTimer = setInterval(() => {
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          connectWebSocket();
+        }
+      }, 2000);
+    }
+  };
+
+  ws.onerror = () => {
+    ws.close();
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'reload') {
+      window.location.reload();
+      return;
+    }
+
+    if (data.type === 'pause_state') {
+      gamePaused = !!data.paused;
+      gameOverlay.classList.toggle('visible', gamePaused);
+      return;
+    }
+
+    if (data.type === 'system_action') {
+      if (data.action === 'resume') {
+        gamePaused = false;
+        gameOverlay.classList.remove('visible');
+        ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
+      }
+
+      if (data.action === 'return_home') {
+        ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
+        window.location.href = "/";
+      }
+      return;
+    }
+
+    if (data.type) {
+      return;
+    }
+
+    currentInput = {
+      up: !!data.up,
+      down: !!data.down,
+      left: !!data.left,
+      right: !!data.right,
+      enter: !!data.enter
+    };
+
+    lastInputTime = Date.now();
+
+    if (
+      currentInput.up ||
+      currentInput.down ||
+      currentInput.left ||
+      currentInput.right ||
+      currentInput.enter
+    ) {
+      lastActivityTime = Date.now();
+    }
+  };
+}
+
+connectWebSocket();
 
 fetch('/qr')
   .then(res => res.json())
@@ -672,59 +753,6 @@ fetch('/games-list')
     games = [];
     renderGamesList();
   });
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-
-  if (data.type === 'reload') {
-    window.location.reload();
-    return;
-  }
-
-  if (data.type === 'pause_state') {
-    gamePaused = !!data.paused;
-    gameOverlay.classList.toggle('visible', gamePaused);
-    return;
-  }
-
-  if (data.type === 'system_action') {
-    if (data.action === 'resume') {
-      gamePaused = false;
-      gameOverlay.classList.remove('visible');
-      ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
-    }
-
-    if (data.action === 'return_home') {
-      ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
-      window.location.href = "/";
-    }
-    return;
-  }
-
-  if (data.type) {
-    return;
-  }
-
-  currentInput = {
-    up: !!data.up,
-    down: !!data.down,
-    left: !!data.left,
-    right: !!data.right,
-    enter: !!data.enter
-  };
-
-  lastInputTime = Date.now();
-
-  if (
-    currentInput.up ||
-    currentInput.down ||
-    currentInput.left ||
-    currentInput.right ||
-    currentInput.enter
-  ) {
-    lastActivityTime = Date.now();
-  }
-};
 
 function loadModeStatus() {
   fetch('/mode-status')
