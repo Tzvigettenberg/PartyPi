@@ -2,16 +2,18 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
   html, body {
-    margin: 0;
-    padding: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: linear-gradient(180deg, #0b1633 0%, #0f1f4a 100%);
+    background: #0c0a1a;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+    position: relative;
   }
 
   body {
@@ -20,192 +22,216 @@
     justify-content: center;
   }
 
+  /* Background glows */
+  body::before, body::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 600px; height: 600px;
+    background: rgba(124, 58, 237, 0.12);
+    top: -200px; left: -100px;
+  }
+  body::after {
+    width: 500px; height: 500px;
+    background: rgba(236, 72, 153, 0.08);
+    bottom: -200px; right: -100px;
+  }
+
   .screen {
     width: 100%;
     height: 100%;
     box-sizing: border-box;
-    padding: 3.2vh 3vw 2.5vh 3vw;
+    padding: 28px 48px;
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 1;
   }
 
+  /* Header / Brand */
   .topbar {
     display: flex;
-    justify-content: flex-start;
     align-items: center;
-    height: 11vh;
+    height: 70px;
   }
 
   .brand {
-    font-size: clamp(44px, 5.4vw, 88px);
-    font-weight: bold;
+    font-size: 38px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #a78bfa, #ec4899, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.03em;
   }
 
-  .main {
+  /* ── Onboarding Screen ── */
+  #onboardingScreen {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1px 1fr;
-    gap: 2.4vw;
-    align-items: stretch;
+    display: flex;
+    flex-direction: column;
     min-height: 0;
   }
 
-  .divider {
-    background: rgba(255,255,255,0.14);
-    border-radius: 999px;
-    margin: 3vh 0;
+  .cards {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: center;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
   }
 
-  .left,
-  .right {
-    min-width: 0;
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 36px 40px;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 28px;
+    height: 100%;
+    max-height: 480px;
+    backdrop-filter: blur(20px);
+  }
+
+  .card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-step {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #a78bfa;
+  }
+
+  .card-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #e0e7ff, #ffffff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* WiFi details */
+  .wifi-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    gap: 28px;
   }
 
-  .left { padding-right: 1vw; }
-  .right { align-items: center; text-align: center; padding-left: 1vw; }
-
-  .step {
-    font-size: clamp(28px, 2.3vw, 42px);
-    font-weight: bold;
-    opacity: 0.92;
-    margin-bottom: 1.2vh;
-  }
-
-  .headline {
-    font-size: clamp(50px, 5vw, 92px);
-    font-weight: bold;
-    line-height: 1.06;
-    margin-bottom: 2vh;
-  }
-
-  .sub {
-    font-size: clamp(24px, 2vw, 38px);
-    line-height: 1.35;
-    opacity: 0.94;
-    margin-bottom: 3vh;
-    max-width: 90%;
-  }
-
-  .wifi-card {
-    background: linear-gradient(180deg, rgba(37,99,235,0.22) 0%, rgba(30,64,175,0.18) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 28px;
-    padding: 3vh 2vw;
-    display: flex;
-    flex-direction: column;
-    gap: 2.2vh;
-    max-width: 92%;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-
-  .wifi-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.7vh;
-  }
+  .wifi-item { text-align: center; }
 
   .wifi-label {
-    font-size: clamp(20px, 1.45vw, 28px);
-    opacity: 0.8;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 8px;
   }
 
-  .wifi-value {
-    font-size: clamp(40px, 3.2vw, 66px);
-    font-weight: bold;
-    line-height: 1.05;
-    word-break: break-word;
+  .wifi-val {
+    font-size: 54px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .wifi-val.mono {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+
+  .wifi-divider {
+    width: 40px;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* QR */
+  .qr-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
   }
 
   .qr-box {
     background: white;
-    padding: 22px;
-    border-radius: 30px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    line-height: 0;
   }
 
   .qr-box img {
-    width: min(35vw, 460px);
-    height: min(35vw, 460px);
+    width: 280px;
+    height: 280px;
     display: block;
   }
 
-  .manual {
-    margin-top: 2vh;
-    max-width: min(42vw, 650px);
+  .url-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.2);
   }
 
-  .manual-label {
-    font-size: clamp(18px, 1.3vw, 24px);
-    opacity: 0.8;
-    margin-bottom: 0.8vh;
-  }
-
-  .manual-url {
-    font-size: clamp(22px, 1.55vw, 30px);
-    line-height: 1.35;
-    word-break: break-word;
-    opacity: 0.96;
-  }
-
-  .bottom {
-    min-height: 21vh;
+  /* Onboarding footer */
+  .onboarding-footer {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 1.3vh;
-    padding-bottom: 1vh;
-  }
-
-  .status {
-    font-size: clamp(24px, 2vw, 36px);
-    opacity: 0.96;
-    text-align: center;
-    font-weight: bold;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 12px;
+    height: 80px;
   }
 
   .enter-hint {
-    font-size: clamp(24px, 2vw, 38px);
-    font-weight: bold;
-    letter-spacing: 0.3px;
+    font-size: 26px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     opacity: 0;
-    transition: opacity 0.25s ease;
-    text-align: center;
+    transition: opacity 0.3s ease;
+    letter-spacing: -0.01em;
   }
 
   .enter-hint.visible {
     opacity: 1;
-    animation: pulse 1s infinite;
+    animation: softPulse 2.5s ease infinite;
   }
 
-  .square-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.9vh;
-  }
-
-  .square-label {
-    font-size: clamp(18px, 1.3vw, 24px);
-    opacity: 0.82;
-  }
-
-  canvas {
-    width: min(34vw, 430px);
-    height: min(14vw, 170px);
-    background: rgba(255,255,255,0.07);
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.08);
+  @keyframes softPulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
   }
 
   .hidden { display: none !important; }
 
+  /* ── Menu / Games / Settings screens ── */
   .menu-screen,
   .games-screen,
   .settings-screen {
@@ -287,8 +313,8 @@
   }
 
   .menu-card.selected {
-    border-color: #60a5fa;
-    background: rgba(96,165,250,0.16);
+    border-color: #a78bfa;
+    background: rgba(167,139,250,0.16);
     transform: scale(1.02);
   }
 
@@ -325,8 +351,8 @@
 
   .game-row.selected,
   .settings-row.selected {
-    border-color: #60a5fa;
-    background: rgba(96,165,250,0.16);
+    border-color: #a78bfa;
+    background: rgba(167,139,250,0.16);
     transform: scale(1.01);
   }
 
@@ -442,12 +468,6 @@
     opacity: 0.9;
     line-height: 1.35;
   }
-
-  @keyframes pulse {
-    0% { opacity: 0.35; }
-    50% { opacity: 1; }
-    100% { opacity: 0.35; }
-  }
 </style>
 </head>
 <body>
@@ -457,50 +477,41 @@
     </div>
 
     <div id="onboardingScreen">
-      <div class="main">
-        <div class="left">
-          <div class="step">Step 1</div>
-          <div class="headline">Connect to PartyPi Wi-Fi</div>
-          <div class="sub">Open your phone’s Wi-Fi settings and join the PartyPi network.</div>
-
-          <div class="wifi-card">
-            <div class="wifi-row">
-              <div class="wifi-label">Wi-Fi name</div>
-              <div class="wifi-value">PartyPi</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-step">Step 1</div>
+            <div class="card-title">Join the Wi-Fi</div>
+          </div>
+          <div class="wifi-details">
+            <div class="wifi-item">
+              <div class="wifi-label">Network Name</div>
+              <div class="wifi-val">PartyPi</div>
             </div>
-
-            <div class="wifi-row">
+            <div class="wifi-divider"></div>
+            <div class="wifi-item">
               <div class="wifi-label">Password</div>
-              <div class="wifi-value">12345678</div>
+              <div class="wifi-val mono">12345678</div>
             </div>
           </div>
         </div>
 
-        <div class="divider"></div>
-
-        <div class="right">
-          <div class="step">Step 2</div>
-          <div class="headline">Scan to open controller</div>
-
-          <div class="qr-box">
-            <img id="qrImage" alt="Controller QR code">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-step">Step 2</div>
+            <div class="card-title">Scan QR Code</div>
           </div>
-
-          <div class="manual">
-            <div class="manual-label">Manual URL</div>
-            <div class="manual-url" id="manualUrl">https://10.42.0.1:3443/controller.html</div>
+          <div class="qr-section">
+            <div class="qr-box">
+              <img id="qrImage" alt="QR Code" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Crect fill='%23f4f4f5' width='280' height='280' rx='8'/%3E%3Ctext x='140' y='148' text-anchor='middle' font-family='system-ui' font-size='18' fill='%23a1a1aa'%3EQR Code%3C/text%3E%3C/svg%3E">
+            </div>
+            <div class="url-text" id="manualUrl">https://10.42.0.1:3443/controller.html</div>
           </div>
         </div>
       </div>
 
-      <div class="bottom">
-        <div class="status" id="statusText">Waiting for controller...</div>
-        <div class="enter-hint" id="enterHint">Press Enter to continue</div>
-
-        <div class="square-wrap">
-          <div class="square-label">Input test</div>
-          <canvas id="c" width="380" height="160"></canvas>
-        </div>
+      <div class="onboarding-footer">
+        <div class="enter-hint" id="enterHint">Press ENTER on your controller to start</div>
       </div>
     </div>
 
@@ -609,9 +620,6 @@
   </div>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-const statusText = document.getElementById("statusText");
 const enterHint = document.getElementById("enterHint");
 const qrImage = document.getElementById("qrImage");
 const manualUrl = document.getElementById("manualUrl");
@@ -635,8 +643,6 @@ const settingsActionText = document.getElementById("settingsActionText");
 const currentModeText = document.getElementById("currentModeText");
 const currentControllerUrl = document.getElementById("currentControllerUrl");
 
-let x = 165;
-let y = 55;
 let currentInput = { up: false, down: false, left: false, right: false, enter: false };
 let previousInput = { up: false, down: false, left: false, right: false, enter: false };
 let lastInputTime = 0;
@@ -651,7 +657,6 @@ let games = [];
 let gamePaused = false;
 
 const HOME_TIMEOUT_MS = 2 * 60 * 1000;
-const BOX_SIZE = 50;
 
 const ws = new WebSocket(`ws://${location.host}`);
 
@@ -831,7 +836,6 @@ function launchSelectedGame() {
     ? `${location.protocol}//${location.host}${game.controllerEntry}`
     : `${location.protocol}//${location.host}/controller.html`;
 
-  // show game-specific controller URL on screen for a moment by updating the QR/manual target source
   fetch('/qr')
     .then(res => res.json())
     .catch(() => {});
@@ -864,6 +868,16 @@ function activateSettingsItem() {
     currentModeText.textContent = 'Switching to Dev Mode...';
     fetch('/switch-to-dev', { method: 'POST' }).catch(() => {});
     setTimeout(loadModeStatus, 3000);
+  }
+}
+
+function updateOnboardingStatus() {
+  const hasInput = currentInput.up || currentInput.down || currentInput.left || currentInput.right || currentInput.enter;
+
+  if (hasInput || (Date.now() - lastInputTime < 3000 && lastInputTime > 0)) {
+    enterHint.classList.add('visible');
+  } else {
+    enterHint.classList.remove('visible');
   }
 }
 
@@ -936,44 +950,12 @@ function handleHomeTimeout() {
   }
 }
 
-function drawInputTest() {
-  if (currentInput.left) x -= 4;
-  if (currentInput.right) x += 4;
-  if (currentInput.up) y -= 4;
-  if (currentInput.down) y += 4;
-
-  if (x < 0) x = 0;
-  if (x > canvas.width - BOX_SIZE) x = canvas.width - BOX_SIZE;
-  if (y < 0) y = 0;
-  if (y > canvas.height - BOX_SIZE) y = canvas.height - BOX_SIZE;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(255,255,255,0.12)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "white";
-  ctx.fillRect(x, y, BOX_SIZE, BOX_SIZE);
-
-  const hasInput = currentInput.up || currentInput.down || currentInput.left || currentInput.right || currentInput.enter;
-
-  if (hasInput) {
-    statusText.textContent = 'Controller connected';
-    enterHint.classList.add('visible');
-  } else if (Date.now() - lastInputTime > 3000) {
-    statusText.textContent = 'Waiting for controller...';
-    enterHint.classList.remove('visible');
-  } else {
-    statusText.textContent = 'Controller connected';
-    enterHint.classList.add('visible');
-  }
-}
-
 function loop() {
   handlePressedEvents();
   handleHomeTimeout();
 
   if (currentScreen === "onboarding") {
-    drawInputTest();
+    updateOnboardingStatus();
   }
 
   requestAnimationFrame(loop);
