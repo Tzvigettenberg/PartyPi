@@ -219,6 +219,25 @@ const wsUrl = `${wsProtocol}//${location.hostname}:${wsPort}`;
 let ws;
 let wsReconnectTimer = null;
 
+let state = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+  enter: false,
+  pause: false
+};
+
+let pauseMode = false;
+
+const statusText = document.getElementById('statusText');
+const hintText = document.getElementById('hintText');
+const dpadWrap = document.getElementById('dpadWrap');
+const pauseBtn = document.getElementById('pauseBtn');
+const pausePanel = document.getElementById('pausePanel');
+const resumeBtn = document.getElementById('resumeBtn');
+const homeBtn = document.getElementById('homeBtn');
+
 function connectWebSocket() {
   ws = new WebSocket(wsUrl);
 
@@ -246,31 +265,23 @@ function connectWebSocket() {
     ws.close();
   };
 
-let state = {
-  up: false,
-  down: false,
-  left: false,
-  right: false,
-  enter: false,
-  pause: false
-};
-
-let pauseMode = false;
-
-const statusText = document.getElementById('statusText');
-const hintText = document.getElementById('hintText');
-const dpadWrap = document.getElementById('dpadWrap');
-const pauseBtn = document.getElementById('pauseBtn');
-const pausePanel = document.getElementById('pausePanel');
-const resumeBtn = document.getElementById('resumeBtn');
-const homeBtn = document.getElementById('homeBtn');
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'pause_state') {
+      setPauseMode(!!data.paused);
+    }
+    if (data.type === 'reload') {
+      window.location.reload();
+    }
+  };
+}
 
 function clearButtons() {
   document.querySelectorAll('.dpad button').forEach(btn => btn.classList.remove('active'));
 }
 
 function sendButtons() {
-  if (ws.readyState === 1) {
+  if (ws && ws.readyState === 1) {
     ws.send(JSON.stringify(state));
   }
 }
@@ -293,7 +304,7 @@ function press(dir, buttonEl) {
   resetState(false);
   state[dir] = true;
   buttonEl.classList.add('active');
-  statusText.textContent = dir === 'enter' ? 'ENTER' : dir.toUpperCase();
+  statusText.textContent = dir === 'enter' ? 'OK' : dir.toUpperCase();
   sendButtons();
 }
 
@@ -325,23 +336,12 @@ function setPauseMode(value) {
 }
 
 function sendSystemAction(action) {
-  if (ws.readyState === 1) {
+  if (ws && ws.readyState === 1) {
     ws.send(JSON.stringify({
       type: 'system_action',
       action
     }));
   }
-}
-
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'pause_state') {
-      setPauseMode(!!data.paused);
-    }
-    if (data.type === 'reload') {
-      window.location.reload();
-    }
-  };
 }
 
 connectWebSocket();
