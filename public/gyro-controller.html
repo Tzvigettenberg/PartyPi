@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 55%, #020617 100%);
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body {
+    position: relative;
+  }
+
+  .page {
+    height: 100%;
+    box-sizing: border-box;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)) 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 48px;
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+
+  .top-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  button {
+    border: none;
+    border-radius: 14px;
+    color: white;
+    background: rgba(255,255,255,0.12);
+    font-size: 16px;
+  }
+
+  .top-btn {
+    min-width: 86px;
+    height: 42px;
+    padding: 0 14px;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.08);
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .hero {
+    text-align: center;
+    padding: 22px 18px;
+  }
+
+  .hero-title {
+    font-size: 30px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+
+  .hero-text {
+    font-size: 18px;
+    line-height: 1.4;
+    opacity: 0.9;
+  }
+
+  .action-btn {
+    width: 100%;
+    min-height: 64px;
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .primary {
+    background: #2563eb;
+  }
+
+  .secondary {
+    background: #334155;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .label {
+    font-size: 14px;
+    opacity: 0.75;
+    margin-bottom: 6px;
+  }
+
+  .value {
+    font-size: 24px;
+    font-weight: bold;
+    word-break: break-word;
+  }
+
+  .value.small {
+    font-size: 18px;
+    font-weight: normal;
+  }
+
+  .footer-note {
+    text-align: center;
+    font-size: 16px;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="topbar">
+    <div class="title">WiiPi Gyro</div>
+    <div class="top-buttons">
+      <button class="top-btn" onclick="location.reload()">Refresh</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="card hero">
+      <div class="hero-title">Gyro Lab Controller</div>
+      <div class="hero-text">Enable motion, hold your phone naturally, then tap Recenter. Tilt left and right to move the ball.</div>
+    </div>
+
+    <button class="action-btn primary" id="enableBtn">Enable Motion</button>
+    <button class="action-btn secondary" id="recenterBtn">Recenter</button>
+
+    <div class="card">
+      <div class="status-grid">
+        <div>
+          <div class="label">Status</div>
+          <div class="value small" id="statusText">Waiting to enable motion</div>
+        </div>
+        <div>
+          <div class="label">Permission</div>
+          <div class="value small" id="permissionText">Unknown</div>
+        </div>
+        <div>
+          <div class="label">Gamma</div>
+          <div class="value" id="gammaText">0.0</div>
+        </div>
+        <div>
+          <div class="label">Centered Gamma</div>
+          <div class="value" id="centeredGammaText">0.0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Open this page only for gyro testing. Your normal controller still works separately.
+    </div>
+  </div>
+</div>
+
+<script>
+const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsPort = location.protocol === 'https:' ? '3443' : location.port;
+const ws = new WebSocket(`${wsProtocol}//${location.hostname}:${wsPort}`);
+
+const enableBtn = document.getElementById('enableBtn');
+const recenterBtn = document.getElementById('recenterBtn');
+const statusText = document.getElementById('statusText');
+const permissionText = document.getElementById('permissionText');
+const gammaText = document.getElementById('gammaText');
+const centeredGammaText = document.getElementById('centeredGammaText');
+
+let motionEnabled = false;
+let permissionGranted = false;
+let gamma = 0;
+let gammaCenter = 0;
+
+function sendGyro() {
+  if (ws.readyState === 1) {
+    ws.send(JSON.stringify({
+      type: 'gyro',
+      motionEnabled,
+      gamma,
+      centeredGamma: gamma - gammaCenter
+    }));
+  }
+}
+
+function updateDisplay() {
+  gammaText.textContent = gamma.toFixed(1);
+  centeredGammaText.textContent = (gamma - gammaCenter).toFixed(1);
+
+  if (!motionEnabled) {
+    statusText.textContent = 'Waiting to enable motion';
+  } else {
+    statusText.textContent = 'Motion active';
+  }
+
+  permissionText.textContent = permissionGranted ? 'Granted' : 'Not granted';
+}
+
+function handleOrientation(event) {
+  gamma = typeof event.gamma === 'number' ? event.gamma : 0;
+  updateDisplay();
+  sendGyro();
+}
+
+async function enableMotion() {
+  try {
+    let granted = true;
+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const result = await DeviceOrientationEvent.requestPermission();
+      granted = result === 'granted';
+    }
+
+    if (!granted) {
+      permissionGranted = false;
+      motionEnabled = false;
+      permissionText.textContent = 'Denied';
+      statusText.textContent = 'Motion permission denied';
+      sendGyro();
+      return;
+    }
+
+    permissionGranted = true;
+    motionEnabled = true;
+    window.addEventListener('deviceorientation', handleOrientation);
+    updateDisplay();
+    sendGyro();
+  } catch (err) {
+    permissionGranted = false;
+    motionEnabled = false;
+    permissionText.textContent = 'Error';
+    statusText.textContent = 'Could not enable motion';
+    sendGyro();
+  }
+}
+
+function recenter() {
+  gammaCenter = gamma;
+  updateDisplay();
+  sendGyro();
+}
+
+enableBtn.addEventListener('click', enableMotion);
+recenterBtn.addEventListener('click', recenter);
+
+updateDisplay();
+sendGyro();
+</script>
+
+</body>
+</html>

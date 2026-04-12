@@ -1,0 +1,8 @@
+{
+  "id": "blackjack",
+  "name": "Blackjack",
+  "description": "Phone shows your hand, balance, and controls. TV shows the table.",
+  "controls": "custom",
+  "entry": "/games/blackjack/index.html",
+  "controllerEntry": "/games/blackjack/controller.html"
+}

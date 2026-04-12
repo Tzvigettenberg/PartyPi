@@ -1,0 +1,8 @@
+{
+  "id": "marble-roll",
+  "name": "Marble Roll",
+  "description": "Tilt to roll a marble through the maze.",
+  "controls": "gyro",
+  "entry": "/games/marble-roll/index.html",
+  "controllerPreset": "gyro"
+}

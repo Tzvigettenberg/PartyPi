@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 55%, #020617 100%);
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .page {
+    height: 100%;
+    box-sizing: border-box;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)) 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 46px;
+  }
+
+  .title {
+    font-size: 26px;
+    font-weight: bold;
+  }
+
+  .pause-btn {
+    width: 92px;
+    height: 40px;
+    font-size: 15px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255,255,255,0.12);
+    color: white;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .controller-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .controller {
+    width: min(100%, 520px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hint {
+    font-size: 16px;
+    opacity: 0.85;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  .dpad {
+    width: min(64vw, 280px);
+    height: min(64vw, 280px);
+    position: relative;
+  }
+
+  .dpad button {
+    position: absolute;
+    border: none;
+    color: white;
+    border-radius: 26px;
+    background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+    font-size: 32px;
+    font-weight: bold;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dpad button.active {
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+
+  .up, .down {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 34%;
+    height: 30%;
+  }
+
+  .left, .right {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30%;
+    height: 34%;
+  }
+
+  .up { top: 0; }
+  .down { bottom: 0; }
+  .left { left: 0; }
+  .right { right: 0; }
+
+  .center-btn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 28%;
+    height: 28%;
+    border-radius: 26px;
+    font-size: 20px !important;
+    background: linear-gradient(180deg, #475569 0%, #334155 100%) !important;
+  }
+
+  .status {
+    min-height: 22px;
+    font-size: 16px;
+    opacity: 0.85;
+    text-align: center;
+  }
+
+  .pause-panel {
+    width: 100%;
+    background: rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 12px;
+    box-sizing: border-box;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pause-panel.visible {
+    display: flex;
+  }
+
+  .pause-title {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .pause-sub {
+    font-size: 14px;
+    opacity: 0.8;
+    text-align: center;
+  }
+
+  .pause-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pause-actions button {
+    min-height: 52px;
+    border-radius: 18px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    color: white;
+    background: linear-gradient(180deg, #475569 0%, #334155 100%);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pause-actions button.home {
+    background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="title">WiiPi</div>
+    <button class="pause-btn" id="pauseBtn">Pause</button>
+  </div>
+
+  <div class="controller-wrap">
+    <div class="controller">
+      <div class="hint" id="hintText">Use D-pad for menus and standard games.</div>
+
+      <div class="dpad" id="dpadWrap">
+        <button class="up" data-dir="up">▲</button>
+        <button class="left" data-dir="left">◀</button>
+        <button class="center-btn" data-dir="enter">OK</button>
+        <button class="right" data-dir="right">▶</button>
+        <button class="down" data-dir="down">▼</button>
+      </div>
+
+      <div class="status" id="statusText">Ready</div>
+
+      <div class="pause-panel" id="pausePanel">
+        <div class="pause-title">Game Paused</div>
+        <div class="pause-sub">Resume or return home.</div>
+        <div class="pause-actions">
+          <button id="resumeBtn">Resume</button>
+          <button class="home" id="homeBtn">Return Home</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsPort = location.protocol === 'https:' ? '3443' : location.port;
+const ws = new WebSocket(`${wsProtocol}//${location.hostname}:${wsPort}`);
+
+let state = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+  enter: false,
+  pause: false
+};
+
+let pauseMode = false;
+
+const statusText = document.getElementById('statusText');
+const hintText = document.getElementById('hintText');
+const dpadWrap = document.getElementById('dpadWrap');
+const pauseBtn = document.getElementById('pauseBtn');
+const pausePanel = document.getElementById('pausePanel');
+const resumeBtn = document.getElementById('resumeBtn');
+const homeBtn = document.getElementById('homeBtn');
+
+function clearButtons() {
+  document.querySelectorAll('.dpad button').forEach(btn => btn.classList.remove('active'));
+}
+
+function sendButtons() {
+  if (ws.readyState === 1) {
+    ws.send(JSON.stringify(state));
+  }
+}
+
+function resetState(sendNow = true) {
+  state = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    enter: false,
+    pause: false
+  };
+  clearButtons();
+  if (sendNow) sendButtons();
+}
+
+function press(dir, buttonEl) {
+  if (pauseMode) return;
+  resetState(false);
+  state[dir] = true;
+  buttonEl.classList.add('active');
+  statusText.textContent = dir === 'enter' ? 'ENTER' : dir.toUpperCase();
+  sendButtons();
+}
+
+function release() {
+  resetState();
+  statusText.textContent = 'Ready';
+}
+
+function sendPausePulse() {
+  resetState(false);
+  state.pause = true;
+  statusText.textContent = 'PAUSE';
+  sendButtons();
+
+  setTimeout(() => {
+    state.pause = false;
+    sendButtons();
+    statusText.textContent = 'Ready';
+  }, 120);
+}
+
+function setPauseMode(value) {
+  pauseMode = value;
+  dpadWrap.style.display = pauseMode ? 'none' : 'block';
+  pausePanel.classList.toggle('visible', pauseMode);
+  hintText.textContent = pauseMode
+    ? 'Use the buttons below.'
+    : 'Use D-pad for menus and standard games.';
+}
+
+function sendSystemAction(action) {
+  if (ws.readyState === 1) {
+    ws.send(JSON.stringify({
+      type: 'system_action',
+      action
+    }));
+  }
+}
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'pause_state') {
+    setPauseMode(!!data.paused);
+  }
+};
+
+document.querySelectorAll('.dpad button').forEach(button => {
+  const dir = button.dataset.dir;
+
+  button.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    press(dir, button);
+  }, { passive: false });
+
+  button.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    release();
+  }, { passive: false });
+
+  button.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    release();
+  }, { passive: false });
+
+  button.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    press(dir, button);
+  });
+
+  button.addEventListener('mouseup', (e) => {
+    e.preventDefault();
+    release();
+  });
+});
+
+pauseBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  sendPausePulse();
+});
+
+pauseBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  sendPausePulse();
+}, { passive: false });
+
+resumeBtn.addEventListener('click', () => sendSystemAction('resume'));
+homeBtn.addEventListener('click', () => sendSystemAction('return_home'));
+
+resumeBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  sendSystemAction('resume');
+}, { passive: false });
+
+homeBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  sendSystemAction('return_home');
+}, { passive: false });
+
+document.addEventListener('mouseup', release);
+document.addEventListener('touchend', release, { passive: false });
+
+setPauseMode(false);
+</script>
+</body>
+</html>

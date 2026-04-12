@@ -1,0 +1,8 @@
+{
+  "id": "gyro-lab",
+  "name": "Gyro Lab",
+  "description": "Test phone tilt input in a simple motion lab.",
+  "controls": "gyro",
+  "entry": "/games/gyro-lab/index.html",
+  "controllerPreset": "gyro"
+}

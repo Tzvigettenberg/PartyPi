@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(180deg, #0b1633 0%, #0f1f4a 100%);
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .screen {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 3.2vh 3vw 2.5vh 3vw;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 11vh;
+  }
+
+  .brand {
+    font-size: clamp(44px, 5.4vw, 88px);
+    font-weight: bold;
+  }
+
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 2.4vw;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .divider {
+    background: rgba(255,255,255,0.14);
+    border-radius: 999px;
+    margin: 3vh 0;
+  }
+
+  .left,
+  .right {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .left { padding-right: 1vw; }
+  .right { align-items: center; text-align: center; padding-left: 1vw; }
+
+  .step {
+    font-size: clamp(28px, 2.3vw, 42px);
+    font-weight: bold;
+    opacity: 0.92;
+    margin-bottom: 1.2vh;
+  }
+
+  .headline {
+    font-size: clamp(50px, 5vw, 92px);
+    font-weight: bold;
+    line-height: 1.06;
+    margin-bottom: 2vh;
+  }
+
+  .sub {
+    font-size: clamp(24px, 2vw, 38px);
+    line-height: 1.35;
+    opacity: 0.94;
+    margin-bottom: 3vh;
+    max-width: 90%;
+  }
+
+  .wifi-card {
+    background: linear-gradient(180deg, rgba(37,99,235,0.22) 0%, rgba(30,64,175,0.18) 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 28px;
+    padding: 3vh 2vw;
+    display: flex;
+    flex-direction: column;
+    gap: 2.2vh;
+    max-width: 92%;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .wifi-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7vh;
+  }
+
+  .wifi-label {
+    font-size: clamp(20px, 1.45vw, 28px);
+    opacity: 0.8;
+  }
+
+  .wifi-value {
+    font-size: clamp(40px, 3.2vw, 66px);
+    font-weight: bold;
+    line-height: 1.05;
+    word-break: break-word;
+  }
+
+  .qr-box {
+    background: white;
+    padding: 22px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+  }
+
+  .qr-box img {
+    width: min(35vw, 460px);
+    height: min(35vw, 460px);
+    display: block;
+  }
+
+  .manual {
+    margin-top: 2vh;
+    max-width: min(42vw, 650px);
+  }
+
+  .manual-label {
+    font-size: clamp(18px, 1.3vw, 24px);
+    opacity: 0.8;
+    margin-bottom: 0.8vh;
+  }
+
+  .manual-url {
+    font-size: clamp(22px, 1.55vw, 30px);
+    line-height: 1.35;
+    word-break: break-word;
+    opacity: 0.96;
+  }
+
+  .bottom {
+    min-height: 21vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1.3vh;
+    padding-bottom: 1vh;
+  }
+
+  .status {
+    font-size: clamp(24px, 2vw, 36px);
+    opacity: 0.96;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  .enter-hint {
+    font-size: clamp(24px, 2vw, 38px);
+    font-weight: bold;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    text-align: center;
+  }
+
+  .enter-hint.visible {
+    opacity: 1;
+    animation: pulse 1s infinite;
+  }
+
+  .square-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9vh;
+  }
+
+  .square-label {
+    font-size: clamp(18px, 1.3vw, 24px);
+    opacity: 0.82;
+  }
+
+  canvas {
+    width: min(34vw, 430px);
+    height: min(14vw, 170px);
+    background: rgba(255,255,255,0.07);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .hidden { display: none !important; }
+
+  .menu-screen,
+  .games-screen,
+  .settings-screen {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2vh;
+  }
+
+  .menu-screen.active,
+  .games-screen.active,
+  .settings-screen.active {
+    display: flex;
+  }
+
+  .menu-header,
+  .games-header,
+  .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2vw;
+    margin-top: 2vh;
+  }
+
+  .menu-title-wrap,
+  .games-title-wrap,
+  .settings-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+  }
+
+  .menu-kicker,
+  .games-kicker,
+  .settings-kicker {
+    font-size: clamp(24px, 2vw, 34px);
+    opacity: 0.8;
+  }
+
+  .menu-title,
+  .games-title,
+  .settings-title {
+    font-size: clamp(52px, 6vw, 100px);
+    font-weight: bold;
+    line-height: 1.05;
+  }
+
+  .menu-sub,
+  .games-sub,
+  .settings-sub {
+    font-size: clamp(24px, 2vw, 34px);
+    opacity: 0.9;
+    max-width: 62vw;
+    line-height: 1.3;
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2vw;
+    margin-top: 2vh;
+    flex: 1;
+    align-items: stretch;
+  }
+
+  .menu-card {
+    background: rgba(255,255,255,0.08);
+    border-radius: 28px;
+    padding: 2.5vh 1.8vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 28vh;
+    box-sizing: border-box;
+    border: 4px solid transparent;
+    transition: border-color 0.12s ease, transform 0.12s ease, background 0.12s ease;
+  }
+
+  .menu-card.selected {
+    border-color: #60a5fa;
+    background: rgba(96,165,250,0.16);
+    transform: scale(1.02);
+  }
+
+  .menu-card-title {
+    font-size: clamp(28px, 2.5vw, 46px);
+    font-weight: bold;
+    margin-bottom: 1.6vh;
+  }
+
+  .menu-card-text {
+    font-size: clamp(18px, 1.45vw, 26px);
+    line-height: 1.35;
+    opacity: 0.9;
+  }
+
+  .games-list,
+  .settings-list {
+    margin-top: 2vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4vh;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .game-row,
+  .settings-row {
+    background: rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 2.2vh 1.6vw;
+    border: 4px solid transparent;
+    transition: border-color 0.12s ease, transform 0.12s ease, background 0.12s ease;
+  }
+
+  .game-row.selected,
+  .settings-row.selected {
+    border-color: #60a5fa;
+    background: rgba(96,165,250,0.16);
+    transform: scale(1.01);
+  }
+
+  .game-row-title,
+  .settings-row-title {
+    font-size: clamp(26px, 2.2vw, 42px);
+    font-weight: bold;
+    margin-bottom: 0.8vh;
+  }
+
+  .game-row-text,
+  .settings-row-text {
+    font-size: clamp(18px, 1.4vw, 26px);
+    line-height: 1.35;
+    opacity: 0.9;
+    word-break: break-word;
+  }
+
+  .empty-games {
+    font-size: clamp(24px, 2vw, 34px);
+    opacity: 0.9;
+    margin-top: 4vh;
+  }
+
+  .menu-footer,
+  .games-footer,
+  .settings-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2vw;
+    padding-bottom: 2vh;
+  }
+
+  .menu-help,
+  .games-help,
+  .settings-help {
+    font-size: clamp(20px, 1.6vw, 28px);
+    opacity: 0.86;
+  }
+
+  .menu-action,
+  .games-action,
+  .settings-action {
+    font-size: clamp(24px, 2vw, 36px);
+    font-weight: bold;
+    opacity: 0.95;
+  }
+
+  .settings-status-card {
+    background: rgba(255,255,255,0.08);
+    border-radius: 28px;
+    padding: 2.4vh 1.8vw;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .settings-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.6vw;
+  }
+
+  .settings-status-label {
+    font-size: clamp(18px, 1.3vw, 24px);
+    opacity: 0.78;
+    margin-bottom: 0.8vh;
+  }
+
+  .settings-status-value {
+    font-size: clamp(28px, 2.3vw, 46px);
+    font-weight: bold;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .settings-status-value.small {
+    font-size: clamp(20px, 1.5vw, 28px);
+    font-weight: normal;
+    opacity: 0.95;
+  }
+
+  .game-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.58);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .game-overlay.visible {
+    display: flex;
+  }
+
+  .game-overlay-card {
+    width: min(780px, 85vw);
+    background: #0f172a;
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 28px;
+    padding: 34px 30px;
+    text-align: center;
+  }
+
+  .game-overlay-title {
+    font-size: clamp(34px, 3vw, 54px);
+    font-weight: bold;
+    margin-bottom: 14px;
+  }
+
+  .game-overlay-sub {
+    font-size: clamp(20px, 1.8vw, 30px);
+    opacity: 0.9;
+    line-height: 1.35;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.35; }
+    50% { opacity: 1; }
+    100% { opacity: 0.35; }
+  }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div class="brand">WiiPi</div>
+    </div>
+
+    <div id="onboardingScreen">
+      <div class="main">
+        <div class="left">
+          <div class="step">Step 1</div>
+          <div class="headline">Connect to WiiPi Wi-Fi</div>
+          <div class="sub">Open your phone’s Wi-Fi settings and join the WiiPi network.</div>
+
+          <div class="wifi-card">
+            <div class="wifi-row">
+              <div class="wifi-label">Wi-Fi name</div>
+              <div class="wifi-value">WiiPi</div>
+            </div>
+
+            <div class="wifi-row">
+              <div class="wifi-label">Password</div>
+              <div class="wifi-value">12345678</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="right">
+          <div class="step">Step 2</div>
+          <div class="headline">Scan to open controller</div>
+
+          <div class="qr-box">
+            <img id="qrImage" alt="Controller QR code">
+          </div>
+
+          <div class="manual">
+            <div class="manual-label">Manual URL</div>
+            <div class="manual-url" id="manualUrl">https://10.42.0.1:3443/controller.html</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom">
+        <div class="status" id="statusText">Waiting for controller...</div>
+        <div class="enter-hint" id="enterHint">Press Enter to continue</div>
+
+        <div class="square-wrap">
+          <div class="square-label">Input test</div>
+          <canvas id="c" width="380" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div id="menuScreen" class="menu-screen">
+      <div class="menu-header">
+        <div class="menu-title-wrap">
+          <div class="menu-kicker">Main Menu</div>
+          <div class="menu-title">Choose something to do</div>
+          <div class="menu-sub">Use left and right to move. Press Enter to open.</div>
+        </div>
+      </div>
+
+      <div class="menu-grid">
+        <div class="menu-card selected" data-index="0">
+          <div>
+            <div class="menu-card-title">Game Select</div>
+            <div class="menu-card-text">Browse every installed game automatically.</div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-index="1">
+          <div>
+            <div class="menu-card-title">Controller Test</div>
+            <div class="menu-card-text">Go back to the input test screen and make sure everything works.</div>
+          </div>
+        </div>
+
+        <div class="menu-card" data-index="2">
+          <div>
+            <div class="menu-card-title">Console Settings</div>
+            <div class="menu-card-text">Switch between Play Mode and Dev Mode from the TV.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-footer">
+        <div class="menu-help">Left / Right to move • Enter to select</div>
+        <div class="menu-action" id="menuActionText">Game Select</div>
+      </div>
+    </div>
+
+    <div id="gamesScreen" class="games-screen">
+      <div class="games-header">
+        <div class="games-title-wrap">
+          <div class="games-kicker">Game Select</div>
+          <div class="games-title">Pick a game</div>
+          <div class="games-sub">Use up and down to move. Press Enter to launch. Press left to go back.</div>
+        </div>
+      </div>
+
+      <div class="games-list" id="gamesList"></div>
+
+      <div class="games-footer">
+        <div class="games-help">Up / Down to move • Enter to launch • Left to go back</div>
+        <div class="games-action" id="gamesActionText">Loading games...</div>
+      </div>
+    </div>
+
+    <div id="settingsScreen" class="settings-screen">
+      <div class="settings-header">
+        <div class="settings-title-wrap">
+          <div class="settings-kicker">Console Settings</div>
+          <div class="settings-title">Console mode</div>
+          <div class="settings-sub">Use up and down to move. Press Enter to switch. Press left to go back.</div>
+        </div>
+      </div>
+
+      <div class="settings-status-card">
+        <div class="settings-status-grid">
+          <div>
+            <div class="settings-status-label">Current mode</div>
+            <div class="settings-status-value" id="currentModeText">Loading...</div>
+          </div>
+
+          <div>
+            <div class="settings-status-label">Controller URL</div>
+            <div class="settings-status-value small" id="currentControllerUrl">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-list">
+        <div class="settings-row selected" data-index="0">
+          <div class="settings-row-title">Switch to Play Mode</div>
+          <div class="settings-row-text">Use WiiPi hotspot for phones and controller connection.</div>
+        </div>
+
+        <div class="settings-row" data-index="1">
+          <div class="settings-row-title">Switch to Dev Mode</div>
+          <div class="settings-row-text">Reconnect WiiPi to your home Wi-Fi for development.</div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <div class="settings-help">Up / Down to move • Enter to switch • Left to go back</div>
+        <div class="settings-action" id="settingsActionText">Switch to Play Mode</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-overlay" id="gameOverlay">
+    <div class="game-overlay-card">
+      <div class="game-overlay-title" id="gameOverlayTitle">Game Paused</div>
+      <div class="game-overlay-sub" id="gameOverlaySub">Resume on controller.</div>
+    </div>
+  </div>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const statusText = document.getElementById("statusText");
+const enterHint = document.getElementById("enterHint");
+const qrImage = document.getElementById("qrImage");
+const manualUrl = document.getElementById("manualUrl");
+
+const onboardingScreen = document.getElementById("onboardingScreen");
+const menuScreen = document.getElementById("menuScreen");
+const gamesScreen = document.getElementById("gamesScreen");
+const settingsScreen = document.getElementById("settingsScreen");
+const gameOverlay = document.getElementById("gameOverlay");
+const gameOverlayTitle = document.getElementById("gameOverlayTitle");
+const gameOverlaySub = document.getElementById("gameOverlaySub");
+
+const menuCards = Array.from(document.querySelectorAll(".menu-card"));
+const menuActionText = document.getElementById("menuActionText");
+
+const gamesList = document.getElementById("gamesList");
+const gamesActionText = document.getElementById("gamesActionText");
+
+const settingsRows = Array.from(document.querySelectorAll(".settings-row"));
+const settingsActionText = document.getElementById("settingsActionText");
+const currentModeText = document.getElementById("currentModeText");
+const currentControllerUrl = document.getElementById("currentControllerUrl");
+
+let x = 165;
+let y = 55;
+let currentInput = { up: false, down: false, left: false, right: false, enter: false };
+let previousInput = { up: false, down: false, left: false, right: false, enter: false };
+let lastInputTime = 0;
+let lastActivityTime = Date.now();
+
+let currentScreen = "onboarding";
+let selectedIndex = 0;
+let selectedGameIndex = 0;
+let selectedSettingsIndex = 0;
+let games = [];
+
+let gamePaused = false;
+
+const HOME_TIMEOUT_MS = 2 * 60 * 1000;
+const BOX_SIZE = 50;
+
+const ws = new WebSocket(`ws://${location.host}`);
+
+fetch('/qr')
+  .then(res => res.json())
+  .then(data => {
+    qrImage.src = data.qr;
+    manualUrl.textContent = data.url;
+  })
+  .catch(() => {
+    manualUrl.textContent = 'https://10.42.0.1:3443/controller.html';
+  });
+
+fetch('/games-list')
+  .then(res => res.json())
+  .then(data => {
+    games = Array.isArray(data) ? data : [];
+    renderGamesList();
+  })
+  .catch(() => {
+    games = [];
+    renderGamesList();
+  });
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+
+  if (data.type === 'pause_state') {
+    gamePaused = !!data.paused;
+    gameOverlay.classList.toggle('visible', gamePaused);
+    return;
+  }
+
+  if (data.type === 'system_action') {
+    if (data.action === 'resume') {
+      gamePaused = false;
+      gameOverlay.classList.remove('visible');
+      ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
+    }
+
+    if (data.action === 'return_home') {
+      ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
+      window.location.href = "/";
+    }
+    return;
+  }
+
+  if (data.type) {
+    return;
+  }
+
+  currentInput = {
+    up: !!data.up,
+    down: !!data.down,
+    left: !!data.left,
+    right: !!data.right,
+    enter: !!data.enter
+  };
+
+  lastInputTime = Date.now();
+
+  if (
+    currentInput.up ||
+    currentInput.down ||
+    currentInput.left ||
+    currentInput.right ||
+    currentInput.enter
+  ) {
+    lastActivityTime = Date.now();
+  }
+};
+
+function loadModeStatus() {
+  fetch('/mode-status')
+    .then(res => res.json())
+    .then(data => {
+      currentModeText.textContent =
+        data.mode === 'play' ? 'Play Mode' :
+        data.mode === 'dev' ? 'Dev Mode' : 'Unknown';
+
+      currentControllerUrl.textContent = data.controllerUrl || 'Unavailable';
+    })
+    .catch(() => {
+      currentModeText.textContent = 'Unknown';
+      currentControllerUrl.textContent = 'Unavailable';
+    });
+}
+
+function updateMenuSelection() {
+  menuCards.forEach((card, index) => {
+    card.classList.toggle("selected", index === selectedIndex);
+  });
+  menuActionText.textContent = menuCards[selectedIndex].querySelector(".menu-card-title").textContent;
+}
+
+function updateSettingsSelection() {
+  settingsRows.forEach((row, index) => {
+    row.classList.toggle("selected", index === selectedSettingsIndex);
+  });
+  settingsActionText.textContent = settingsRows[selectedSettingsIndex].querySelector(".settings-row-title").textContent;
+}
+
+function renderGamesList() {
+  gamesList.innerHTML = '';
+
+  if (!games.length) {
+    gamesList.innerHTML = '<div class="empty-games">No games found yet.</div>';
+    gamesActionText.textContent = 'No games installed';
+    return;
+  }
+
+  if (selectedGameIndex > games.length - 1) {
+    selectedGameIndex = 0;
+  }
+
+  games.forEach((game, index) => {
+    const row = document.createElement('div');
+    row.className = 'game-row' + (index === selectedGameIndex ? ' selected' : '');
+    row.innerHTML = `
+      <div class="game-row-title">${game.name}</div>
+      <div class="game-row-text">${game.description || 'No description yet.'}</div>
+    `;
+    gamesList.appendChild(row);
+  });
+
+  gamesActionText.textContent = games[selectedGameIndex].name;
+}
+
+function openMenu() {
+  currentScreen = "menu";
+  onboardingScreen.classList.add("hidden");
+  gamesScreen.classList.remove("active");
+  settingsScreen.classList.remove("active");
+  menuScreen.classList.add("active");
+  lastActivityTime = Date.now();
+  updateMenuSelection();
+}
+
+function openOnboarding() {
+  currentScreen = "onboarding";
+  onboardingScreen.classList.remove("hidden");
+  menuScreen.classList.remove("active");
+  gamesScreen.classList.remove("active");
+  settingsScreen.classList.remove("active");
+  lastActivityTime = Date.now();
+}
+
+function openGamesMenu() {
+  currentScreen = "games";
+  onboardingScreen.classList.add("hidden");
+  menuScreen.classList.remove("active");
+  settingsScreen.classList.remove("active");
+  gamesScreen.classList.add("active");
+  lastActivityTime = Date.now();
+  renderGamesList();
+}
+
+function openSettingsMenu() {
+  currentScreen = "settings";
+  onboardingScreen.classList.add("hidden");
+  menuScreen.classList.remove("active");
+  gamesScreen.classList.remove("active");
+  settingsScreen.classList.add("active");
+  lastActivityTime = Date.now();
+  updateSettingsSelection();
+  loadModeStatus();
+}
+
+function launchSelectedGame() {
+  if (!games.length) return;
+  const game = games[selectedGameIndex];
+
+  gameOverlay.classList.remove('visible');
+  ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
+
+  const gameControllerUrl = game.controllerEntry
+    ? `${location.protocol}//${location.host}${game.controllerEntry}`
+    : `${location.protocol}//${location.host}/controller.html`;
+
+  // show game-specific controller URL on screen for a moment by updating the QR/manual target source
+  fetch('/qr')
+    .then(res => res.json())
+    .catch(() => {});
+
+  setTimeout(() => {
+    window.location.href = game.entry;
+  }, 60);
+
+  console.log('Game controller URL:', gameControllerUrl);
+}
+
+function activateMenuItem() {
+  lastActivityTime = Date.now();
+
+  if (selectedIndex === 0) openGamesMenu();
+  if (selectedIndex === 1) openOnboarding();
+  if (selectedIndex === 2) openSettingsMenu();
+}
+
+function activateSettingsItem() {
+  lastActivityTime = Date.now();
+
+  if (selectedSettingsIndex === 0) {
+    currentModeText.textContent = 'Switching to Play Mode...';
+    fetch('/switch-to-play', { method: 'POST' }).catch(() => {});
+    setTimeout(loadModeStatus, 3000);
+  }
+
+  if (selectedSettingsIndex === 1) {
+    currentModeText.textContent = 'Switching to Dev Mode...';
+    fetch('/switch-to-dev', { method: 'POST' }).catch(() => {});
+    setTimeout(loadModeStatus, 3000);
+  }
+}
+
+function handlePressedEvents() {
+  const upPressed = currentInput.up && !previousInput.up;
+  const downPressed = currentInput.down && !previousInput.down;
+  const leftPressed = currentInput.left && !previousInput.left;
+  const rightPressed = currentInput.right && !previousInput.right;
+  const enterPressed = currentInput.enter && !previousInput.enter;
+
+  if (currentScreen === "onboarding") {
+    if (enterPressed) openMenu();
+  } else if (currentScreen === "menu") {
+    if (leftPressed) {
+      selectedIndex = (selectedIndex - 1 + menuCards.length) % menuCards.length;
+      lastActivityTime = Date.now();
+      updateMenuSelection();
+    }
+
+    if (rightPressed) {
+      selectedIndex = (selectedIndex + 1) % menuCards.length;
+      lastActivityTime = Date.now();
+      updateMenuSelection();
+    }
+
+    if (enterPressed) activateMenuItem();
+  } else if (currentScreen === "games") {
+    if (leftPressed) openMenu();
+
+    if (upPressed && games.length) {
+      selectedGameIndex = (selectedGameIndex - 1 + games.length) % games.length;
+      lastActivityTime = Date.now();
+      renderGamesList();
+    }
+
+    if (downPressed && games.length) {
+      selectedGameIndex = (selectedGameIndex + 1) % games.length;
+      lastActivityTime = Date.now();
+      renderGamesList();
+    }
+
+    if (enterPressed && games.length) launchSelectedGame();
+  } else if (currentScreen === "settings") {
+    if (leftPressed) openMenu();
+
+    if (upPressed) {
+      selectedSettingsIndex = (selectedSettingsIndex - 1 + settingsRows.length) % settingsRows.length;
+      lastActivityTime = Date.now();
+      updateSettingsSelection();
+    }
+
+    if (downPressed) {
+      selectedSettingsIndex = (selectedSettingsIndex + 1) % settingsRows.length;
+      lastActivityTime = Date.now();
+      updateSettingsSelection();
+    }
+
+    if (enterPressed) activateSettingsItem();
+  }
+
+  previousInput = { ...currentInput };
+}
+
+function handleHomeTimeout() {
+  if (
+    (currentScreen === "menu" || currentScreen === "games" || currentScreen === "settings") &&
+    Date.now() - lastActivityTime >= HOME_TIMEOUT_MS
+  ) {
+    openOnboarding();
+  }
+}
+
+function drawInputTest() {
+  if (currentInput.left) x -= 4;
+  if (currentInput.right) x += 4;
+  if (currentInput.up) y -= 4;
+  if (currentInput.down) y += 4;
+
+  if (x < 0) x = 0;
+  if (x > canvas.width - BOX_SIZE) x = canvas.width - BOX_SIZE;
+  if (y < 0) y = 0;
+  if (y > canvas.height - BOX_SIZE) y = canvas.height - BOX_SIZE;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "white";
+  ctx.fillRect(x, y, BOX_SIZE, BOX_SIZE);
+
+  const hasInput = currentInput.up || currentInput.down || currentInput.left || currentInput.right || currentInput.enter;
+
+  if (hasInput) {
+    statusText.textContent = 'Controller connected';
+    enterHint.classList.add('visible');
+  } else if (Date.now() - lastInputTime > 3000) {
+    statusText.textContent = 'Waiting for controller...';
+    enterHint.classList.remove('visible');
+  } else {
+    statusText.textContent = 'Controller connected';
+    enterHint.classList.add('visible');
+  }
+}
+
+function loop() {
+  handlePressedEvents();
+  handleHomeTimeout();
+
+  if (currentScreen === "onboarding") {
+    drawInputTest();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+updateMenuSelection();
+updateSettingsSelection();
+renderGamesList();
+loadModeStatus();
+loop();
+</script>
+</body>
+</html>

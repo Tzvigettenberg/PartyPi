@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(circle at top, #14532d 0%, #0f172a 60%, #020617 100%);
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  .page {
+    height: 100%;
+    box-sizing: border-box;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)) 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title {
+    font-size: 26px;
+    font-weight: bold;
+  }
+
+  .pause-btn {
+    width: 92px;
+    height: 40px;
+    font-size: 15px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255,255,255,0.12);
+    color: white;
+  }
+
+  .panel {
+    background: rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .box {
+    background: rgba(0,0,0,0.18);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+
+  .label {
+    font-size: 12px;
+    opacity: 0.72;
+    margin-bottom: 4px;
+  }
+
+  .value {
+    font-size: 21px;
+    font-weight: bold;
+  }
+
+  .cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 42px;
+  }
+
+  .chip {
+    background: rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .msg {
+    text-align: center;
+    font-size: 15px;
+    min-height: 20px;
+  }
+
+  .grid2, .grid1 {
+    display: grid;
+    gap: 10px;
+  }
+
+  .grid2 { grid-template-columns: 1fr 1fr; }
+  .grid1 { grid-template-columns: 1fr; }
+
+  button.action {
+    min-height: 52px;
+    border-radius: 18px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    color: white;
+    background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  }
+
+  button.action.primary {
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+
+  button.action.home {
+    background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+  }
+
+  button.action:disabled {
+    opacity: 0.45;
+  }
+
+  .pause-panel {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pause-panel.visible {
+    display: flex;
+  }
+
+  .play-panel.hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="title">Blackjack</div>
+    <button class="pause-btn" id="pauseBtn">Pause</button>
+  </div>
+
+  <div class="panel play-panel" id="playPanel">
+    <div class="row2">
+      <div class="box">
+        <div class="label">Balance</div>
+        <div class="value" id="balanceText">$100</div>
+      </div>
+      <div class="box">
+        <div class="label">Bet</div>
+        <div class="value" id="betText">$10</div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="label">Your cards</div>
+      <div class="cards" id="cardsWrap"></div>
+      <div class="value" style="font-size:15px;font-weight:normal;" id="valueText">Value: 0</div>
+    </div>
+
+    <div class="msg" id="messageText">Place your bet and deal.</div>
+
+    <div class="grid2">
+      <button class="action" id="betDownBtn">Bet -</button>
+      <button class="action" id="betUpBtn">Bet +</button>
+    </div>
+
+    <div class="grid1">
+      <button class="action primary" id="dealBtn">Deal</button>
+    </div>
+
+    <div class="grid2">
+      <button class="action" id="hitBtn">Hit</button>
+      <button class="action" id="standBtn">Stand</button>
+    </div>
+
+    <div class="grid1">
+      <button class="action" id="doubleBtn">Double</button>
+    </div>
+
+    <div class="grid1">
+      <button class="action" id="newRoundBtn">New Round</button>
+    </div>
+  </div>
+
+  <div class="panel pause-panel" id="pausePanel">
+    <div class="msg" style="font-size:18px;font-weight:bold;">Game Paused</div>
+    <div class="grid1">
+      <button class="action primary" id="resumeBtn">Resume</button>
+      <button class="action home" id="homeBtn">Return Home</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsPort = location.protocol === 'https:' ? '3443' : location.port;
+const ws = new WebSocket(`${wsProtocol}//${location.hostname}:${wsPort}`);
+
+let paused = false;
+
+const playPanel = document.getElementById('playPanel');
+const pausePanel = document.getElementById('pausePanel');
+
+const balanceText = document.getElementById('balanceText');
+const betText = document.getElementById('betText');
+const cardsWrap = document.getElementById('cardsWrap');
+const valueText = document.getElementById('valueText');
+const messageText = document.getElementById('messageText');
+
+const pauseBtn = document.getElementById('pauseBtn');
+const resumeBtn = document.getElementById('resumeBtn');
+const homeBtn = document.getElementById('homeBtn');
+
+const betDownBtn = document.getElementById('betDownBtn');
+const betUpBtn = document.getElementById('betUpBtn');
+const dealBtn = document.getElementById('dealBtn');
+const hitBtn = document.getElementById('hitBtn');
+const standBtn = document.getElementById('standBtn');
+const doubleBtn = document.getElementById('doubleBtn');
+const newRoundBtn = document.getElementById('newRoundBtn');
+
+function setPaused(value) {
+  paused = value;
+  playPanel.classList.toggle('hidden', paused);
+  pausePanel.classList.toggle('visible', paused);
+}
+
+function sendPauseState(value) {
+  if (ws.readyState === 1) {
+    ws.send(JSON.stringify({
+      type: 'pause_state',
+      paused: value
+    }));
+  }
+}
+
+function sendSystemAction(action) {
+  if (ws.readyState === 1) {
+    ws.send(JSON.stringify({
+      type: 'system_action',
+      action
+    }));
+  }
+}
+
+function sendBlackjackAction(action) {
+  if (ws.readyState === 1) {
+    ws.send(JSON.stringify({
+      type: 'blackjack_action',
+      action
+    }));
+  }
+}
+
+function attachAction(el, action) {
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (el.disabled) return;
+    sendBlackjackAction(action);
+  });
+
+  el.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (el.disabled) return;
+    sendBlackjackAction(action);
+  }, { passive: false });
+}
+
+function updateState(data) {
+  balanceText.textContent = `$${data.balance ?? 0}`;
+  betText.textContent = `$${data.bet ?? 0}`;
+  valueText.textContent = `Value: ${data.playerValue ?? 0}`;
+  messageText.textContent = data.message || '';
+
+  cardsWrap.innerHTML = '';
+  const cards = data.playerCards || [];
+  if (!cards.length) {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.textContent = 'No cards yet';
+    cardsWrap.appendChild(chip);
+  } else {
+    cards.forEach(card => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = card;
+      cardsWrap.appendChild(chip);
+    });
+  }
+
+  betDownBtn.disabled = !data.canBet;
+  betUpBtn.disabled = !data.canBet;
+  dealBtn.disabled = !data.canDeal;
+  hitBtn.disabled = !data.canHit;
+  standBtn.disabled = !data.canStand;
+  doubleBtn.disabled = !data.canDouble;
+  newRoundBtn.disabled = !data.canNewRound;
+}
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+
+  if (data.type === 'pause_state') {
+    setPaused(!!data.paused);
+    return;
+  }
+
+  if (data.type === 'blackjack_state') {
+    updateState(data);
+  }
+};
+
+pauseBtn.addEventListener('click', () => sendPauseState(true));
+pauseBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  sendPauseState(true);
+}, { passive: false });
+
+resumeBtn.addEventListener('click', () => sendSystemAction('resume'));
+homeBtn.addEventListener('click', () => sendSystemAction('return_home'));
+
+resumeBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  sendSystemAction('resume');
+}, { passive: false });
+
+homeBtn.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  sendSystemAction('return_home');
+}, { passive: false });
+
+attachAction(betDownBtn, 'bet_down');
+attachAction(betUpBtn, 'bet_up');
+attachAction(dealBtn, 'deal');
+attachAction(hitBtn, 'hit');
+attachAction(standBtn, 'stand');
+attachAction(doubleBtn, 'double');
+attachAction(newRoundBtn, 'new_round');
+
+setPaused(false);
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "id": "ball-push",
+  "name": "Ball Push",
+  "description": "Push the ball around the arena.",
+  "controls": "dpad",
+  "entry": "/games/ball-push/index.html",
+  "controllerPreset": "dpad"
+}
