@@ -12,8 +12,8 @@ const app = express();
 const server = http.createServer(app);
 const secureServer = https.createServer(
   {
-    key: fs.readFileSync(path.join(__dirname, 'certs', 'wiipi-key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, 'certs', 'wiipi-cert.pem'))
+    key: fs.readFileSync(path.join(__dirname, 'certs', 'partypi-key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'certs', 'partypi-cert.pem'))
   },
   app
 );
@@ -23,7 +23,7 @@ const secureWss = new WebSocket.Server({ server: secureServer });
 
 const PLAY_CONTROLLER_URL = 'https://10.42.0.1:3443/controller.html';
 const DEV_CONTROLLER_URL = 'https://192.168.1.20:3443/controller.html';
-const PLAY_CONNECTION_NAME = 'WiiPiHotspot';
+const PLAY_CONNECTION_NAME = 'PartyPiHotspot';
 const DEV_CONNECTION_NAME = 'netplan-wlan0-HOTWiFi-DF89';
 
 let lastPauseState = { type: 'pause_state', paused: false };
@@ -166,9 +166,9 @@ attachSocketHandler(wss);
 attachSocketHandler(secureWss);
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('WiiPi HTTP running on port 3000');
+  console.log('PartyPi HTTP running on port 3000');
 });
 
 secureServer.listen(3443, '0.0.0.0', () => {
-  console.log('WiiPi HTTPS running on port 3443');
+  console.log('PartyPi HTTPS running on port 3443');
 });
