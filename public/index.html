@@ -81,8 +81,8 @@
   .cards {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 3vw;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2vw;
     align-items: center;
     width: 100%;
     padding: 0 2vw;
@@ -197,16 +197,54 @@
     color: rgba(255,255,255,0.2);
   }
 
-  .ssl-hint {
-    font-size: clamp(16px, 1.4vw, 24px);
-    color: rgba(255,255,255,0.4);
-    line-height: 1.4;
-    text-align: center;
-    max-width: 90%;
+  .ssl-steps {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3.5vh;
+    width: 100%;
   }
 
-  .ssl-hint strong {
-    color: rgba(255,255,255,0.7);
+  .ssl-step {
+    display: flex;
+    align-items: center;
+    gap: 1.2vw;
+    width: 80%;
+  }
+
+  .ssl-step-num {
+    width: clamp(44px, 4vw, 64px);
+    height: clamp(44px, 4vw, 64px);
+    border-radius: 50%;
+    background: rgba(167,139,250,0.2);
+    color: #a78bfa;
+    font-size: clamp(24px, 2.2vw, 36px);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .ssl-step-text {
+    font-size: clamp(28px, 2.8vw, 46px);
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.3;
+  }
+
+  .ssl-step-text strong {
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  .ssl-step-note {
+    font-size: clamp(18px, 1.6vw, 28px);
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    line-height: 1.4;
   }
 
   /* Onboarding footer */
@@ -496,7 +534,24 @@
               <img id="qrImage" alt="QR Code" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Crect fill='%23f4f4f5' width='280' height='280' rx='8'/%3E%3Ctext x='140' y='148' text-anchor='middle' font-family='system-ui' font-size='18' fill='%23a1a1aa'%3EQR Code%3C/text%3E%3C/svg%3E">
             </div>
             <div class="url-text" id="manualUrl">https://10.42.0.1:3443/controller.html</div>
-            <div class="ssl-hint">You'll see a warning — tap <strong>Show Details</strong> then <strong>Visit Website</strong></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-step">Step 3</div>
+            <div class="card-title">Tap Through</div>
+          </div>
+          <div class="ssl-steps">
+            <div class="ssl-step">
+              <div class="ssl-step-num">1</div>
+              <div class="ssl-step-text">Tap <strong>Show Details</strong></div>
+            </div>
+            <div class="ssl-step">
+              <div class="ssl-step-num">2</div>
+              <div class="ssl-step-text">Tap <strong>Visit Website</strong></div>
+            </div>
+            <div class="ssl-step-note">A security warning will appear — this is normal!</div>
           </div>
         </div>
       </div>
