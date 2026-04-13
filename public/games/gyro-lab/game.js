@@ -7,28 +7,10 @@ let input = {
   centeredGamma: 0,
   centeredBeta: 0,
   connected: false,
-  motionEnabled: false,
-  pause: false,
-  up: false,
-  down: false,
-  enter: false
-};
-
-let previousInput = {
-  pause: false,
-  up: false,
-  down: false,
-  enter: false
+  motionEnabled: false
 };
 
 let paused = false;
-let pauseIndex = 0;
-
-const pauseOptions = [
-  { label: "Resume", action: "resume" },
-  { label: "Return Home", action: "home" }
-];
-
 let score = 0;
 let pulse = 0;
 
@@ -57,26 +39,20 @@ const particles = [];
 
 spawnTarget();
 
-const ws = new WebSocket(`ws://${location.host}`);
+// ── Use PartyPi SDK for all input ──
+partypi.on('gyro', (data) => {
+  input.gamma = typeof data.gamma === "number" ? data.gamma : 0;
+  input.beta = typeof data.beta === "number" ? data.beta : 0;
+  input.centeredGamma = typeof data.centeredGamma === "number" ? data.centeredGamma : 0;
+  input.centeredBeta = typeof data.centeredBeta === "number" ? data.centeredBeta : 0;
+  input.connected = true;
+  input.motionEnabled = !!data.motionEnabled;
+});
 
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
+partypi.on('pause', () => { paused = true; });
+partypi.on('resume', () => { paused = false; });
 
-  if (data.type === "gyro") {
-    input.gamma = typeof data.gamma === "number" ? data.gamma : 0;
-    input.beta = typeof data.beta === "number" ? data.beta : 0;
-    input.centeredGamma = typeof data.centeredGamma === "number" ? data.centeredGamma : 0;
-    input.centeredBeta = typeof data.centeredBeta === "number" ? data.centeredBeta : 0;
-    input.connected = true;
-    input.motionEnabled = !!data.motionEnabled;
-    return;
-  }
-
-  input.pause = !!data.pause;
-  input.up = !!data.up;
-  input.down = !!data.down;
-  input.enter = !!data.enter;
-};
+// ── Game logic ──
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -175,45 +151,7 @@ function update() {
   updateParticles();
 }
 
-function handlePressedEvents() {
-  const pausePressed = input.pause && !previousInput.pause;
-  const upPressed = input.up && !previousInput.up;
-  const downPressed = input.down && !previousInput.down;
-  const enterPressed = input.enter && !previousInput.enter;
-
-  if (pausePressed) {
-    paused = !paused;
-  }
-
-  if (paused) {
-    if (upPressed) {
-      pauseIndex--;
-      if (pauseIndex < 0) pauseIndex = pauseOptions.length - 1;
-    }
-
-    if (downPressed) {
-      pauseIndex++;
-      if (pauseIndex > pauseOptions.length - 1) pauseIndex = 0;
-    }
-
-    if (enterPressed) {
-      const selected = pauseOptions[pauseIndex];
-
-      if (selected.action === "resume") {
-        paused = false;
-      }
-
-      if (selected.action === "home") {
-        window.location.href = "/";
-      }
-    }
-  }
-
-  previousInput.pause = input.pause;
-  previousInput.up = input.up;
-  previousInput.down = input.down;
-  previousInput.enter = input.enter;
-}
+// ── Drawing ──
 
 function roundRect(x, y, width, height, radius) {
   ctx.beginPath();
@@ -333,69 +271,15 @@ function drawHud() {
     : "Waiting for gyro controller";
 
   ctx.fillText(status, 40, 142);
-  ctx.fillText(`Centered X: ${input.centeredGamma.toFixed(1)}`, 40, 182);
-  ctx.fillText(`Centered Y: ${input.centeredBeta.toFixed(1)}`, 40, 222);
 
   ctx.textAlign = "right";
   ctx.fillStyle = "#facc15";
   ctx.font = "bold 44px Arial";
   ctx.fillText(`Score ${score}`, canvas.width - 40, 66);
-
-  ctx.font = "22px Arial";
-  ctx.fillStyle = "rgba(255,255,255,0.88)";
-  ctx.fillText("Use Start Motion, then Recenter", canvas.width - 40, 102);
-  ctx.textAlign = "left";
-}
-
-function drawPauseOverlay() {
-  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const panelWidth = 520;
-  const panelHeight = 300;
-  const panelX = (canvas.width - panelWidth) / 2;
-  const panelY = (canvas.height - panelHeight) / 2;
-
-  ctx.fillStyle = "#111827";
-  roundRect(panelX, panelY, panelWidth, panelHeight, 28);
-  ctx.fill();
-
-  ctx.strokeStyle = "rgba(255,255,255,0.10)";
-  ctx.lineWidth = 2;
-  roundRect(panelX, panelY, panelWidth, panelHeight, 28);
-  ctx.stroke();
-
-  ctx.fillStyle = "white";
-  ctx.font = "bold 44px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("Paused", canvas.width / 2, panelY + 62);
-
-  ctx.font = "24px Arial";
-  ctx.fillStyle = "rgba(255,255,255,0.88)";
-  ctx.fillText("Use up and down. Press Enter.", canvas.width / 2, panelY + 105);
-
-  for (let i = 0; i < pauseOptions.length; i++) {
-    const option = pauseOptions[i];
-    const optionX = panelX + 50;
-    const optionY = panelY + 135 + i * 68;
-    const optionW = panelWidth - 100;
-    const optionH = 50;
-
-    ctx.fillStyle = i === pauseIndex ? "#2563eb" : "rgba(255,255,255,0.10)";
-    roundRect(optionX, optionY, optionW, optionH, 16);
-    ctx.fill();
-
-    ctx.fillStyle = "white";
-    ctx.font = "bold 26px Arial";
-    ctx.fillText(option.label, canvas.width / 2, optionY + 33);
-  }
-
   ctx.textAlign = "left";
 }
 
 function loop() {
-  handlePressedEvents();
-
   if (!paused) {
     update();
   }
@@ -406,10 +290,6 @@ function loop() {
   drawBall();
   drawParticles();
   drawHud();
-
-  if (paused) {
-    drawPauseOverlay();
-  }
 
   requestAnimationFrame(loop);
 }
