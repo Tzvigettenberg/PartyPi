@@ -319,8 +319,9 @@ const gameControls = document.getElementById('gameControls');
 
 let pauseMode = false;
 let currentControlsId = null;
-let lastControlsUrl = null;  // remember last loaded controls for reconnect
+let lastControlsUrl = null;
 let lastControlsId = null;
+try { lastControlsUrl = sessionStorage.getItem('partypi_controls_url'); lastControlsId = sessionStorage.getItem('partypi_controls_id'); } catch(e) {}
 
 const defaultControlsHTML = gameControls.innerHTML; // save the "Connection lost" + Retry screen
 
@@ -474,6 +475,7 @@ function loadControls(url, id) {
   currentControlsId = id || url;
   lastControlsUrl = url;
   lastControlsId = id;
+  try { sessionStorage.setItem('partypi_controls_url', url); sessionStorage.setItem('partypi_controls_id', id || ''); } catch(e) {}
 
   fetch(url)
     .then(res => res.text())
@@ -551,7 +553,12 @@ window.addEventListener('focus', () => {
 
 // ── Start ──
 connectWebSocket();
-loadControls('/controls/dpad.html', 'dpad');
+
+// Restore last active controls (survives page reload), or default to dpad
+var savedUrl = null;
+var savedId = null;
+try { savedUrl = sessionStorage.getItem('partypi_controls_url'); savedId = sessionStorage.getItem('partypi_controls_id'); } catch(e) {}
+loadControls(savedUrl || '/controls/dpad.html', savedId || 'dpad');
 </script>
 </body>
 </html>
