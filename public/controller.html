@@ -370,22 +370,14 @@ function connectWebSocket() {
     connDot.className = 'conn-dot'; // red (default)
     pauseBtn.classList.remove('show');
     gameControls.innerHTML = defaultControlsHTML; // show "Connection lost" + Retry
-    retryCount++;
-    softRetries++;
 
-    // After 3 failed WebSocket reconnects, just refresh the page.
-    // If JS is running, the refresh will work.
-    if (softRetries >= 3) {
-      window.location.reload();
-      return;
-    }
-
-    // Try silent WebSocket reconnect first (fast, no page flash)
+    // Keep retrying WebSocket silently forever.
+    // When it reconnects, onopen will reload the correct controls.
+    // The "Retry" button is there as a manual fallback if JS is truly dead.
     if (!wsReconnectTimer) {
-      wsReconnectTimer = setTimeout(() => {
-        wsReconnectTimer = null;
+      wsReconnectTimer = setInterval(() => {
         connectWebSocket();
-      }, 1000);
+      }, 2000);
     }
   };
 
@@ -540,6 +532,22 @@ document.addEventListener('touchend', (e) => {
   }
 }, { passive: false });
 
+
+// ── Reconnect when phone wakes up ──
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Phone unlocked / tab foregrounded — try reconnect immediately
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      connectWebSocket();
+    }
+  }
+});
+
+window.addEventListener('focus', () => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    connectWebSocket();
+  }
+});
 
 // ── Start ──
 connectWebSocket();
