@@ -295,7 +295,16 @@ function attachSocketHandler(socketServer) {
           broadcastJSON({ type: 'navigate', url: '/' });
           broadcastJSON({ type: 'load_controls', url: '/controls/dpad.html', id: 'dpad' });
           broadcastJSON({ type: 'pause_state', paused: false });
-          return; // Don't re-broadcast the raw message
+          return;
+        }
+
+        // ── Server-side resume handling ──
+        // Convert resume action into pause_state:false so the system script
+        // (which only listens for pause_state) hides the overlay.
+        if (data && data.type === 'system_action' && data.action === 'resume') {
+          lastPauseState = { type: 'pause_state', paused: false };
+          broadcastJSON({ type: 'pause_state', paused: false });
+          return;
         }
       } catch (err) {
         // ignore
