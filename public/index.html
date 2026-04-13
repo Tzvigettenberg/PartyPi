@@ -490,7 +490,7 @@
 
       <div class="onboarding-footer">
         <div class="controller-status" id="controllerStatus">Waiting for controller...</div>
-        <div class="enter-hint" id="enterHint">Press OK to start</div>
+        <div class="enter-hint" id="enterHint">Press any button to start</div>
       </div>
     </div>
 
@@ -882,8 +882,10 @@ function handlePressedEvents() {
   const rightPressed = currentInput.right && !previousInput.right;
   const enterPressed = currentInput.enter && !previousInput.enter;
 
+  const anyPressed = upPressed || downPressed || leftPressed || rightPressed || enterPressed;
+
   if (currentScreen === "onboarding") {
-    if (enterPressed) openMenu();
+    if (anyPressed) openMenu();
   } else if (currentScreen === "menu") {
     if (leftPressed) {
       selectedIndex = (selectedIndex - 1 + menuCards.length) % menuCards.length;
