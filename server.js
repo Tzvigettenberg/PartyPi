@@ -324,6 +324,13 @@ if (secureWss) {
   attachSocketHandler(secureWss);
 }
 
+// ── Heartbeat ping every 5 seconds ──
+// iOS Safari kills WebSockets silently when backgrounded.
+// This ping lets clients detect when the connection is dead.
+setInterval(() => {
+  broadcastJSON({ type: 'ping', t: Date.now() });
+}, 5000);
+
 server.listen(3000, '0.0.0.0', () => {
   const ip = getLocalIP();
   console.log(`PartyPi HTTP running on port 3000`);
