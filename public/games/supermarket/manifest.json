@@ -1,0 +1,8 @@
+{
+  "id": "supermarket",
+  "name": "Supermarket Dash",
+  "description": "Grab everything on your shopping list before time runs out!",
+  "controls": "dpad",
+  "entry": "/games/supermarket/index.html",
+  "controllerPreset": "dpad"
+}
