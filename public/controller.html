@@ -319,6 +319,8 @@ const gameControls = document.getElementById('gameControls');
 
 let pauseMode = false;
 let currentControlsId = null;
+let lastControlsUrl = null;  // remember last loaded controls for reconnect
+let lastControlsId = null;
 
 const defaultControlsHTML = gameControls.innerHTML; // save the "Connection lost" + Retry screen
 
@@ -356,6 +358,12 @@ function connectWebSocket() {
     pauseBtn.classList.add('show');
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
     if (showReconnectTimer) { clearTimeout(showReconnectTimer); showReconnectTimer = null; }
+
+    // Reload the last active controls on reconnect
+    if (lastControlsUrl) {
+      currentControlsId = null; // force reload
+      loadControls(lastControlsUrl, lastControlsId);
+    }
   };
 
   ws.onclose = () => {
@@ -472,6 +480,8 @@ homeBtn.addEventListener('touchend', (e) => { e.preventDefault(); triggerHome();
 function loadControls(url, id) {
   if (id && id === currentControlsId) return; // already loaded
   currentControlsId = id || url;
+  lastControlsUrl = url;
+  lastControlsId = id;
 
   fetch(url)
     .then(res => res.text())

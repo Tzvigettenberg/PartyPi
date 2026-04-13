@@ -34,9 +34,9 @@ var ball = {
   radius: CELL * 0.35
 };
 
-var BALL_ACCEL = 0.4;      // how much tilt accelerates
-var BALL_MAX_SPEED = 7;
-var BALL_DRAG = 0.91;
+var BALL_ACCEL = 0.7;      // how much tilt accelerates
+var BALL_MAX_SPEED = 10;
+var BALL_DRAG = 0.92;
 
 // ── Game state ──
 var level = 1;
