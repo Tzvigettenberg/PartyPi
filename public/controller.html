@@ -81,6 +81,61 @@
     overflow: hidden;
   }
 
+  /* ── Disconnected overlay ── */
+  .disconnect-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(12,10,26,0.95);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .disconnect-overlay.visible {
+    display: flex;
+  }
+
+  .disconnect-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(239,68,68,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+  }
+
+  .disconnect-title {
+    font-size: 22px;
+    font-weight: 800;
+  }
+
+  .disconnect-sub {
+    font-size: 15px;
+    opacity: 0.6;
+    line-height: 1.4;
+  }
+
+  .disconnect-btn {
+    width: min(90%, 300px);
+    height: 52px;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    color: white;
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 6px;
+  }
+
   /* ── Pause overlay ── */
   .pause-overlay {
     display: none;
@@ -238,6 +293,14 @@
   <div id="gameControls"></div>
 </div>
 
+<!-- Disconnected overlay -->
+<div class="disconnect-overlay" id="disconnectOverlay">
+  <div class="disconnect-icon">!</div>
+  <div class="disconnect-title">Connection Lost</div>
+  <div class="disconnect-sub">The controller lost connection to PartyPi.<br>Tap below to reconnect.</div>
+  <button class="disconnect-btn" id="reconnectBtn">Reconnect</button>
+</div>
+
 <!-- Pause overlay -->
 <div class="pause-overlay" id="pauseOverlay">
   <div class="pause-card">
@@ -264,6 +327,9 @@ const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const homeBtn = document.getElementById('homeBtn');
 const gameControls = document.getElementById('gameControls');
+const disconnectOverlay = document.getElementById('disconnectOverlay');
+const reconnectBtn = document.getElementById('reconnectBtn');
+let disconnectTimer = null;
 
 let pauseMode = false;
 let currentControlsId = null;
@@ -278,6 +344,23 @@ function getRetryDelay() {
 
 function setConnStatus(status) {
   connDot.className = 'conn-dot ' + status;
+
+  if (status === 'connected') {
+    // Connected — hide disconnect overlay if showing
+    if (disconnectTimer) { clearTimeout(disconnectTimer); disconnectTimer = null; }
+    disconnectOverlay.classList.remove('visible');
+  } else if (status === 'disconnected' && hasEverConnected) {
+    // Lost connection — show overlay after a short delay
+    // (gives auto-reconnect a chance to work first, e.g. on HTTP/dev mode)
+    if (!disconnectTimer) {
+      disconnectTimer = setTimeout(() => {
+        disconnectTimer = null;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          disconnectOverlay.classList.add('visible');
+        }
+      }, 4000);
+    }
+  }
 }
 
 function connectWebSocket() {
@@ -444,20 +527,9 @@ document.addEventListener('touchend', (e) => {
   }
 }, { passive: false });
 
-// ── Reconnect when phone wakes from sleep/lock ──
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    // Phone just woke up — if WS is dead, reconnect immediately
-    if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-      if (wsReconnectTimer) {
-        clearTimeout(wsReconnectTimer);
-        wsReconnectTimer = null;
-      }
-      retryCount = 0;
-      connectWebSocket();
-    }
-  }
-});
+// ── Reconnect button ──
+reconnectBtn.addEventListener('click', (e) => { e.preventDefault(); window.location.reload(); });
+reconnectBtn.addEventListener('touchend', (e) => { e.preventDefault(); window.location.reload(); }, { passive: false });
 
 // ── Start ──
 connectWebSocket();
