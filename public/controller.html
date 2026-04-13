@@ -531,6 +531,19 @@ document.addEventListener('touchend', (e) => {
 reconnectBtn.addEventListener('click', (e) => { e.preventDefault(); window.location.reload(); });
 reconnectBtn.addEventListener('touchend', (e) => { e.preventDefault(); window.location.reload(); }, { passive: false });
 
+// ── Auto-reconnect when phone wakes up ──
+// When user swipes back to Safari, if WS is dead, reload the page.
+// Small delay so the browser has a moment to restore the tab.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    setTimeout(() => {
+      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+        window.location.reload();
+      }
+    }, 500);
+  }
+});
+
 // ── Start ──
 connectWebSocket();
 loadControls('/controls/dpad.html', 'dpad');
