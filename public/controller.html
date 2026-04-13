@@ -58,71 +58,6 @@
   .conn-dot.connected { background: #22c55e; }
   .conn-dot.disconnected { background: #ef4444; }
 
-  .reconnect-btn-topbar {
-    display: none;
-  }
-
-  /* Hide menu button when not connected */
-  .conn-dot:not(.connected) ~ .pause-btn {
-    display: none;
-  }
-
-  /* ── Reconnect screen (fills the controls area) ── */
-  .reconnect-screen {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    text-align: center;
-    width: 100%;
-    height: 100%;
-  }
-
-  .reconnect-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: rgba(239,68,68,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-  }
-
-  .reconnect-title {
-    font-size: 20px;
-    font-weight: 800;
-  }
-
-  .reconnect-sub {
-    font-size: 14px;
-    opacity: 0.6;
-    line-height: 1.4;
-  }
-
-  .reconnect-action {
-    width: min(85%, 280px);
-    height: 50px;
-    border-radius: 14px;
-    font-size: 17px;
-    font-weight: 700;
-    border: none;
-    color: white;
-    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
-    font-family: 'Inter', system-ui, sans-serif;
-    -webkit-tap-highlight-color: transparent;
-    margin-top: 4px;
-  }
-
-  /* When page has .disconnected class, show reconnect screen, hide controls */
-  .page.disconnected #gameControls { display: none; }
-  .page.disconnected .reconnect-screen { display: flex; }
-
-  @keyframes pulse-reconnect {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
 
   .pause-btn {
     height: 36px;
@@ -302,14 +237,6 @@
 
   <!-- Game controls get loaded here -->
   <div id="gameControls"></div>
-
-  <!-- Reconnect screen — shown when not connected, centered where controls would be -->
-  <div class="reconnect-screen" id="reconnectScreen">
-    <div class="reconnect-icon">!</div>
-    <div class="reconnect-title">Connection Lost</div>
-    <div class="reconnect-sub">Tap below to reconnect to PartyPi</div>
-    <button class="reconnect-action" id="reconnectActionBtn">Reconnect</button>
-  </div>
 </div>
 
 <!-- Pause overlay -->
@@ -339,7 +266,6 @@ const pauseOverlay = document.getElementById('pauseOverlay');
 const resumeBtn = document.getElementById('resumeBtn');
 const homeBtn = document.getElementById('homeBtn');
 const gameControls = document.getElementById('gameControls');
-const reconnectActionBtn = document.getElementById('reconnectActionBtn');
 
 let pauseMode = false;
 let currentControlsId = null;
@@ -364,7 +290,6 @@ function connectWebSocket() {
 
   try { ws = new WebSocket(wsUrl); } catch(e) {
     connDot.className = 'conn-dot disconnected';
-    page.classList.add('disconnected');
     return;
   }
 
@@ -373,7 +298,6 @@ function connectWebSocket() {
     retryCount = 0;
     softRetries = 0;
     connDot.className = 'conn-dot connected';
-    page.classList.remove('disconnected');
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
     if (showReconnectTimer) { clearTimeout(showReconnectTimer); showReconnectTimer = null; }
   };
@@ -383,30 +307,19 @@ function connectWebSocket() {
     retryCount++;
     softRetries++;
 
-    // First visit, cert issue — auto-reload after 3 fails
-    if (!hasEverConnected && retryCount === 3) {
+    // After 3 failed WebSocket reconnects, just refresh the page.
+    // If JS is running, the refresh will work.
+    if (softRetries >= 3) {
       window.location.reload();
       return;
     }
 
-    // After 3 soft retries, show the reconnect screen
-    if (hasEverConnected && softRetries >= 3 && !showReconnectTimer) {
-      showReconnectTimer = setTimeout(() => {
-        showReconnectTimer = null;
-        // Only show if still not connected
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-          page.classList.add('disconnected');
-        }
-      }, 500);
-    }
-
-    // Keep trying silently in background
+    // Try silent WebSocket reconnect first (fast, no page flash)
     if (!wsReconnectTimer) {
-      const delay = softRetries < 3 ? 1000 : softRetries < 6 ? 3000 : 8000;
       wsReconnectTimer = setTimeout(() => {
         wsReconnectTimer = null;
         connectWebSocket();
-      }, delay);
+      }, 1000);
     }
   };
 
@@ -435,13 +348,12 @@ function connectWebSocket() {
 }
 
 // ── iOS Safari wake-up detection ──
-// When phone wakes from sleep, try silent reconnect immediately.
-// visibilitychange + focus as belt-and-suspenders.
+// When phone wakes from sleep, if WS is dead, try reconnecting.
+// Try WebSocket first (seamless), auto-refresh if that fails.
 function onWakeUp() {
   if (!hasEverConnected) return;
-  if (ws && ws.readyState === WebSocket.OPEN) return; // still connected, nothing to do
-  // Try silent reconnect
-  softRetries = 0; // reset so we get 3 fresh tries before showing button
+  if (ws && ws.readyState === WebSocket.OPEN) return;
+  softRetries = 0;
   if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
   connectWebSocket();
 }
@@ -560,10 +472,6 @@ document.addEventListener('touchend', (e) => {
   }
 }, { passive: false });
 
-// ── Reconnect button ──
-function doReconnect(e) { e.preventDefault(); window.location.reload(); }
-reconnectActionBtn.addEventListener('click', doReconnect);
-reconnectActionBtn.addEventListener('touchend', doReconnect, { passive: false });
 
 // ── Start ──
 connectWebSocket();
