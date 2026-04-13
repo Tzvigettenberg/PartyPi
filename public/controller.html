@@ -320,6 +320,8 @@ const gameControls = document.getElementById('gameControls');
 let pauseMode = false;
 let currentControlsId = null;
 
+const defaultControlsHTML = gameControls.innerHTML; // save the "Connection lost" + Retry screen
+
 // Two scenarios when connection drops:
 // 1. SOFT: Page still alive, JS running. Try silent reconnect (no refresh needed).
 // 2. HARD: Page frozen/dead. Show Reconnect button (needs full refresh).
@@ -359,6 +361,7 @@ function connectWebSocket() {
   ws.onclose = () => {
     connDot.className = 'conn-dot'; // red (default)
     pauseBtn.classList.remove('show');
+    gameControls.innerHTML = defaultControlsHTML; // show "Connection lost" + Retry
     retryCount++;
     softRetries++;
 
