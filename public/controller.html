@@ -31,6 +31,12 @@
     min-height: 44px;
   }
 
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .brand {
     font-size: 22px;
     font-weight: 900;
@@ -103,7 +109,7 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 
-  .conn-dot.connected ~ .pause-btn {
+  .pause-btn.show {
     display: block;
   }
 
@@ -263,9 +269,11 @@
 <div class="page" id="page">
   <!-- Top bar — always visible -->
   <div class="topbar">
-    <div class="brand">PartyPi</div>
-    <div class="topbar-right">
+    <div class="topbar-left">
+      <div class="brand">PartyPi</div>
       <div class="conn-dot" id="connDot"></div>
+    </div>
+    <div class="topbar-right">
       <button class="pause-btn" id="pauseBtn">Menu</button>
     </div>
   </div>
@@ -276,7 +284,7 @@
   <div id="gameControls">
     <div class="default-reconnect">
       <div class="default-reconnect-sub">Connection lost</div>
-      <button class="default-reconnect-btn" onclick="window.location.reload()">Refresh</button>
+      <button class="default-reconnect-btn" onclick="window.location.reload()">Retry</button>
     </div>
   </div>
 </div>
@@ -328,7 +336,10 @@ function connectWebSocket() {
     try { ws.onclose = null; ws.onerror = null; ws.close(); } catch(e) {}
   }
 
-  connDot.className = 'conn-dot connecting'; // yellow = trying
+  // Only show yellow (connecting) on first attempt. During retries, stay red.
+  if (!hasEverConnected && retryCount === 0) {
+    connDot.className = 'conn-dot connecting'; // yellow = first try
+  }
 
   try { ws = new WebSocket(wsUrl); } catch(e) {
     connDot.className = 'conn-dot'; // red (default)
@@ -340,12 +351,14 @@ function connectWebSocket() {
     retryCount = 0;
     softRetries = 0;
     connDot.className = 'conn-dot connected';
+    pauseBtn.classList.add('show');
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
     if (showReconnectTimer) { clearTimeout(showReconnectTimer); showReconnectTimer = null; }
   };
 
   ws.onclose = () => {
     connDot.className = 'conn-dot'; // red (default)
+    pauseBtn.classList.remove('show');
     retryCount++;
     softRetries++;
 
