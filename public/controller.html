@@ -444,6 +444,21 @@ document.addEventListener('touchend', (e) => {
   }
 }, { passive: false });
 
+// ── Reconnect when phone wakes from sleep/lock ──
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Phone just woke up — if WS is dead, reconnect immediately
+    if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+      if (wsReconnectTimer) {
+        clearTimeout(wsReconnectTimer);
+        wsReconnectTimer = null;
+      }
+      retryCount = 0;
+      connectWebSocket();
+    }
+  }
+});
+
 // ── Start ──
 connectWebSocket();
 loadControls('/controls/dpad.html', 'dpad');
