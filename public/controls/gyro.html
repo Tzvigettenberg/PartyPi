@@ -69,8 +69,12 @@
       <div class="val" id="gyroStatusText">Waiting</div>
     </div>
     <div>
-      <div class="label">Tilt</div>
+      <div class="label">Tilt X</div>
       <div class="val" id="gyroGammaText">0.0</div>
+    </div>
+    <div>
+      <div class="label">Tilt Y</div>
+      <div class="val" id="gyroBetaText">0.0</div>
     </div>
   </div>
 </div>
@@ -82,23 +86,30 @@
   const recenterBtn = document.getElementById('gyroRecenterBtn');
   const statusText = document.getElementById('gyroStatusText');
   const gammaText = document.getElementById('gyroGammaText');
+  const betaText = document.getElementById('gyroBetaText');
 
   let motionEnabled = false;
   let gamma = 0;
+  let beta = 0;
   let gammaCenter = 0;
+  let betaCenter = 0;
 
   function sendGyro() {
     send({
       type: 'gyro',
       motionEnabled,
       gamma,
-      centeredGamma: gamma - gammaCenter
+      beta,
+      centeredGamma: gamma - gammaCenter,
+      centeredBeta: beta - betaCenter
     });
   }
 
   function handleOrientation(event) {
     gamma = typeof event.gamma === 'number' ? event.gamma : 0;
+    beta = typeof event.beta === 'number' ? event.beta : 0;
     gammaText.textContent = (gamma - gammaCenter).toFixed(1);
+    betaText.textContent = (beta - betaCenter).toFixed(1);
     sendGyro();
   }
 
@@ -127,7 +138,9 @@
 
   function recenter() {
     gammaCenter = gamma;
+    betaCenter = beta;
     gammaText.textContent = '0.0';
+    betaText.textContent = '0.0';
     sendGyro();
   }
 
