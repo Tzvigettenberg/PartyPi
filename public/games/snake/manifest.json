@@ -1,0 +1,8 @@
+{
+  "id": "snake",
+  "name": "Snake",
+  "description": "Classic snake. Eat to grow, don't hit yourself.",
+  "controls": "dpad",
+  "entry": "/games/snake/index.html",
+  "controllerPreset": "dpad"
+}
