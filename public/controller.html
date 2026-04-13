@@ -2,13 +2,14 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   html, body {
     margin: 0;
     height: 100%;
-    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 55%, #020617 100%);
+    background: #0c0a1a;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     overflow: hidden;
     touch-action: none;
   }
@@ -16,61 +17,145 @@
   .page {
     height: 100%;
     box-sizing: border-box;
-    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)) 14px;
+    padding: max(10px, env(safe-area-inset-top)) 14px max(10px, env(safe-area-inset-bottom)) 14px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
 
+  /* ── Top bar ── */
   .topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-height: 46px;
+    min-height: 44px;
   }
 
-  .title {
-    font-size: 26px;
-    font-weight: bold;
+  .brand {
+    font-size: 22px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #a78bfa, #ec4899, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.03em;
   }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fbbf24;
+    transition: background 0.3s ease;
+  }
+
+  .conn-dot.connected { background: #22c55e; }
+  .conn-dot.disconnected { background: #ef4444; }
 
   .pause-btn {
-    width: 92px;
-    height: 40px;
-    font-size: 15px;
-    border-radius: 12px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
     border: none;
-    background: rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.1);
     color: white;
     -webkit-tap-highlight-color: transparent;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
-  .controller-wrap {
+  /* ── Game controls area (filled by fragments) ── */
+  #gameControls {
     flex: 1;
     min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
-  .controller {
-    width: min(100%, 520px);
+  /* ── Pause overlay ── */
+  .pause-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pause-overlay.visible {
+    display: flex;
+  }
+
+  .pause-card {
+    width: min(90%, 340px);
+    background: #1e1b2e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .pause-card-title {
+    font-size: 22px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .pause-card-sub {
+    font-size: 14px;
+    opacity: 0.7;
+    text-align: center;
+  }
+
+  .pause-card button {
+    height: 52px;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pause-card .resume-btn {
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+  }
+
+  .pause-card .home-btn {
+    background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  }
+
+  /* ── Default D-pad styles (used by dpad fragment) ── */
+  .dpad-wrap {
+    width: min(100%, 400px);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .hint {
-    font-size: 16px;
-    opacity: 0.85;
+  .dpad-hint {
+    font-size: 14px;
+    opacity: 0.6;
     text-align: center;
-    line-height: 1.25;
   }
 
   .dpad {
-    width: min(64vw, 280px);
-    height: min(64vw, 280px);
+    width: min(64vw, 260px);
+    height: min(64vw, 260px);
     position: relative;
   }
 
@@ -78,196 +163,112 @@
     position: absolute;
     border: none;
     color: white;
-    border-radius: 26px;
-    background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
-    font-size: 32px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);
+    font-size: 28px;
     font-weight: bold;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
     user-select: none;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    font-family: 'Inter', system-ui, sans-serif;
+    transition: background 0.08s ease;
   }
 
   .dpad button.active {
-    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
   }
 
-  .up, .down {
+  .dpad .up, .dpad .down {
     left: 50%;
     transform: translateX(-50%);
     width: 34%;
     height: 30%;
   }
 
-  .left, .right {
+  .dpad .left, .dpad .right {
     top: 50%;
     transform: translateY(-50%);
     width: 30%;
     height: 34%;
   }
 
-  .up { top: 0; }
-  .down { bottom: 0; }
-  .left { left: 0; }
-  .right { right: 0; }
+  .dpad .up { top: 0; }
+  .dpad .down { bottom: 0; }
+  .dpad .left { left: 0; }
+  .dpad .right { right: 0; }
 
-  .center-btn {
+  .dpad .center-btn {
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
     width: 28%;
     height: 28%;
-    border-radius: 26px;
-    font-size: 20px !important;
-    background: linear-gradient(180deg, #475569 0%, #334155 100%) !important;
+    border-radius: 22px;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%) !important;
   }
 
-  .status {
-    min-height: 22px;
-    font-size: 16px;
-    opacity: 0.85;
-    text-align: center;
+  .dpad .center-btn.active {
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%) !important;
   }
 
-  .conn-status {
-    font-size: 13px;
-    text-align: center;
-    padding: 6px 14px;
-    border-radius: 10px;
-    font-weight: 600;
-  }
-
-  .conn-status.connecting {
-    background: rgba(251,191,36,0.15);
-    color: #fbbf24;
-  }
-
-  .conn-status.connected {
-    background: rgba(34,197,94,0.15);
-    color: #22c55e;
-  }
-
-  .conn-status.disconnected {
-    background: rgba(239,68,68,0.15);
-    color: #ef4444;
-  }
-
-  .pause-panel {
-    width: 100%;
-    background: rgba(255,255,255,0.08);
-    border-radius: 18px;
-    padding: 12px;
-    box-sizing: border-box;
-    display: none;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .pause-panel.visible {
-    display: flex;
-  }
-
-  .pause-title {
-    font-size: 18px;
-    font-weight: bold;
-    text-align: center;
-  }
-
-  .pause-sub {
+  .dpad-status {
     font-size: 14px;
-    opacity: 0.8;
+    opacity: 0.5;
     text-align: center;
-  }
-
-  .pause-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .pause-actions button {
-    min-height: 52px;
-    border-radius: 18px;
-    font-size: 18px;
-    font-weight: bold;
-    border: none;
-    color: white;
-    background: linear-gradient(180deg, #475569 0%, #334155 100%);
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .pause-actions button.home {
-    background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+    min-height: 20px;
   }
 </style>
 </head>
 <body>
 <div class="page">
+  <!-- Top bar — always visible -->
   <div class="topbar">
-    <div class="title">PartyPi</div>
-    <button class="pause-btn" id="pauseBtn">Pause</button>
+    <div class="brand">PartyPi</div>
+    <div class="topbar-right">
+      <div class="conn-dot" id="connDot"></div>
+      <button class="pause-btn" id="pauseBtn">Menu</button>
+    </div>
   </div>
 
-  <div class="controller-wrap">
-    <div class="controller">
-      <div class="hint" id="hintText">Use D-pad for menus and standard games.</div>
+  <!-- Game controls get loaded here -->
+  <div id="gameControls"></div>
+</div>
 
-      <div class="dpad" id="dpadWrap">
-        <button class="up" data-dir="up">▲</button>
-        <button class="left" data-dir="left">◀</button>
-        <button class="center-btn" data-dir="enter">OK</button>
-        <button class="right" data-dir="right">▶</button>
-        <button class="down" data-dir="down">▼</button>
-      </div>
-
-      <div class="status" id="statusText">Ready</div>
-      <div class="conn-status connecting" id="connStatus">Connecting...</div>
-
-      <div class="pause-panel" id="pausePanel">
-        <div class="pause-title">Game Paused</div>
-        <div class="pause-sub">Resume or return home.</div>
-        <div class="pause-actions">
-          <button id="resumeBtn">Resume</button>
-          <button class="home" id="homeBtn">Return Home</button>
-        </div>
-      </div>
-    </div>
+<!-- Pause overlay -->
+<div class="pause-overlay" id="pauseOverlay">
+  <div class="pause-card">
+    <div class="pause-card-title">Paused</div>
+    <div class="pause-card-sub">What would you like to do?</div>
+    <button class="resume-btn" id="resumeBtn">Resume</button>
+    <button class="home-btn" id="homeBtn">Return Home</button>
   </div>
 </div>
 
 <script>
+// ── WebSocket setup ──
 const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsPort = location.protocol === 'https:' ? '3443' : location.port;
 const wsUrl = `${wsProtocol}//${location.hostname}:${wsPort}`;
 let ws;
 let wsReconnectTimer = null;
-
-let state = {
-  up: false,
-  down: false,
-  left: false,
-  right: false,
-  enter: false,
-  pause: false
-};
-
-let pauseMode = false;
-
-const statusText = document.getElementById('statusText');
-const hintText = document.getElementById('hintText');
-const dpadWrap = document.getElementById('dpadWrap');
-const pauseBtn = document.getElementById('pauseBtn');
-const pausePanel = document.getElementById('pausePanel');
-const resumeBtn = document.getElementById('resumeBtn');
-const homeBtn = document.getElementById('homeBtn');
-const connStatus = document.getElementById('connStatus');
-
 let retryCount = 0;
 let hasEverConnected = false;
 
+const connDot = document.getElementById('connDot');
+const pauseBtn = document.getElementById('pauseBtn');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const resumeBtn = document.getElementById('resumeBtn');
+const homeBtn = document.getElementById('homeBtn');
+const gameControls = document.getElementById('gameControls');
+
+let pauseMode = false;
+let currentControlsId = null;
+
 function getRetryDelay() {
-  // Fast at first (1s), slows down: 1s, 1s, 1s, 2s, 2s, 3s, 4s, 5s... max 8s
   if (retryCount < 3) return 1000;
   if (retryCount < 5) return 2000;
   if (retryCount < 7) return 3000;
@@ -275,11 +276,8 @@ function getRetryDelay() {
   return 8000;
 }
 
-function setConnStatus(state) {
-  connStatus.className = 'conn-status ' + state;
-  if (state === 'connecting') connStatus.textContent = 'Connecting...';
-  else if (state === 'connected') connStatus.textContent = 'Connected';
-  else if (state === 'disconnected') connStatus.textContent = 'Disconnected — retrying...';
+function setConnStatus(status) {
+  connDot.className = 'conn-dot ' + status;
 }
 
 function connectWebSocket() {
@@ -294,7 +292,6 @@ function connectWebSocket() {
     hasEverConnected = true;
     retryCount = 0;
     setConnStatus('connected');
-    statusText.textContent = 'Ready';
     if (wsReconnectTimer) {
       clearTimeout(wsReconnectTimer);
       wsReconnectTimer = null;
@@ -304,7 +301,6 @@ function connectWebSocket() {
   ws.onclose = () => {
     setConnStatus('disconnected');
     retryCount++;
-    // If first connection attempt fails, reload page once (helps with cert issues)
     if (!hasEverConnected && retryCount === 3) {
       window.location.reload();
       return;
@@ -317,147 +313,140 @@ function connectWebSocket() {
     }
   };
 
-  ws.onerror = () => {
-    ws.close();
-  };
+  ws.onerror = () => { ws.close(); };
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (data.type === 'pause_state') {
-      setPauseMode(!!data.paused);
-    }
+
     if (data.type === 'reload') {
       window.location.reload();
+      return;
+    }
+
+    if (data.type === 'pause_state') {
+      setPauseMode(!!data.paused);
+      return;
+    }
+
+    if (data.type === 'load_controls') {
+      loadControls(data.url, data.id);
+      return;
     }
   };
 }
 
-function clearButtons() {
-  document.querySelectorAll('.dpad button').forEach(btn => btn.classList.remove('active'));
-}
-
-function sendButtons() {
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify(state));
+// ── Send data to server/TV ──
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(obj));
   }
 }
 
-function resetState(sendNow = true) {
-  state = {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    enter: false,
-    pause: false
-  };
-  clearButtons();
-  if (sendNow) sendButtons();
-}
+// Make send() available to game controller fragments
+window.partypi = {
+  send: send,
+  ws: () => ws
+};
 
-function press(dir, buttonEl) {
-  if (pauseMode) return;
-  resetState(false);
-  state[dir] = true;
-  buttonEl.classList.add('active');
-  statusText.textContent = dir === 'enter' ? 'OK' : dir.toUpperCase();
-  sendButtons();
-}
-
-function release() {
-  resetState();
-  statusText.textContent = 'Ready';
-}
-
-function sendPausePulse() {
-  resetState(false);
-  state.pause = true;
-  statusText.textContent = 'PAUSE';
-  sendButtons();
-
-  setTimeout(() => {
-    state.pause = false;
-    sendButtons();
-    statusText.textContent = 'Ready';
-  }, 120);
-}
-
+// ── Pause system ──
 function setPauseMode(value) {
   pauseMode = value;
-  dpadWrap.style.display = pauseMode ? 'none' : 'block';
-  pausePanel.classList.toggle('visible', pauseMode);
-  hintText.textContent = pauseMode
-    ? 'Use the buttons below.'
-    : 'Use D-pad for menus and standard games.';
+  pauseOverlay.classList.toggle('visible', pauseMode);
 }
 
 function sendSystemAction(action) {
-  if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({
-      type: 'system_action',
-      action
-    }));
-  }
+  send({ type: 'system_action', action });
 }
 
-connectWebSocket();
+function triggerPause() {
+  setPauseMode(true);
+  send({ type: 'pause_state', paused: true });
+}
 
-document.querySelectorAll('.dpad button').forEach(button => {
-  const dir = button.dataset.dir;
-
-  button.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    press(dir, button);
-  }, { passive: false });
-
-  button.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    release();
-  }, { passive: false });
-
-  button.addEventListener('touchcancel', (e) => {
-    e.preventDefault();
-    release();
-  }, { passive: false });
-
-  button.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    press(dir, button);
-  });
-
-  button.addEventListener('mouseup', (e) => {
-    e.preventDefault();
-    release();
-  });
-});
-
-pauseBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  sendPausePulse();
-});
-
-pauseBtn.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  sendPausePulse();
-}, { passive: false });
-
-resumeBtn.addEventListener('click', () => sendSystemAction('resume'));
-homeBtn.addEventListener('click', () => sendSystemAction('return_home'));
-
-resumeBtn.addEventListener('touchend', (e) => {
-  e.preventDefault();
+function triggerResume() {
+  setPauseMode(false);
   sendSystemAction('resume');
-}, { passive: false });
+}
 
-homeBtn.addEventListener('touchend', (e) => {
-  e.preventDefault();
+function triggerHome() {
+  setPauseMode(false);
   sendSystemAction('return_home');
+}
+
+pauseBtn.addEventListener('click', (e) => { e.preventDefault(); triggerPause(); });
+pauseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); triggerPause(); }, { passive: false });
+
+resumeBtn.addEventListener('click', (e) => { e.preventDefault(); triggerResume(); });
+resumeBtn.addEventListener('touchend', (e) => { e.preventDefault(); triggerResume(); }, { passive: false });
+
+homeBtn.addEventListener('click', (e) => { e.preventDefault(); triggerHome(); });
+homeBtn.addEventListener('touchend', (e) => { e.preventDefault(); triggerHome(); }, { passive: false });
+
+// ── Controller fragment loading ──
+function loadControls(url, id) {
+  if (id && id === currentControlsId) return; // already loaded
+  currentControlsId = id || url;
+
+  fetch(url)
+    .then(res => res.text())
+    .then(html => {
+      gameControls.innerHTML = html;
+      // Execute any <script> tags in the loaded fragment
+      gameControls.querySelectorAll('script').forEach(oldScript => {
+        const newScript = document.createElement('script');
+        if (oldScript.src) {
+          newScript.src = oldScript.src;
+        } else {
+          newScript.textContent = oldScript.textContent;
+        }
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+    })
+    .catch(err => {
+      console.error('Failed to load controls:', err);
+      // Fall back to default
+      if (url !== '/controls/dpad.html') {
+        loadControls('/controls/dpad.html', 'dpad');
+      }
+    });
+}
+
+// ── Default D-pad input handling ──
+// These are global so the dpad fragment can use them
+let dpadState = { up: false, down: false, left: false, right: false, enter: false, pause: false };
+
+function dpadPress(dir, buttonEl) {
+  if (pauseMode) return;
+  dpadReset(false);
+  dpadState[dir] = true;
+  if (buttonEl) buttonEl.classList.add('active');
+  send(dpadState);
+}
+
+function dpadRelease() {
+  dpadReset();
+}
+
+function dpadReset(sendNow = true) {
+  dpadState = { up: false, down: false, left: false, right: false, enter: false, pause: false };
+  document.querySelectorAll('.dpad button').forEach(btn => btn.classList.remove('active'));
+  if (sendNow) send(dpadState);
+}
+
+// Global touch release
+document.addEventListener('mouseup', () => {
+  if (typeof dpadRelease === 'function') dpadRelease();
+});
+document.addEventListener('touchend', (e) => {
+  // Only reset if touch ended outside a button
+  if (!e.target.closest('.dpad button')) {
+    if (typeof dpadRelease === 'function') dpadRelease();
+  }
 }, { passive: false });
 
-document.addEventListener('mouseup', release);
-document.addEventListener('touchend', release, { passive: false });
-
-setPauseMode(false);
+// ── Start ──
+connectWebSocket();
+loadControls('/controls/dpad.html', 'dpad');
 </script>
 </body>
 </html>

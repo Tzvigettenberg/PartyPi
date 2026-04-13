@@ -92,13 +92,14 @@
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 28px;
-    padding: 5vh 3vw;
+    padding: 3.5vh 3vw;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 3vh;
+    gap: 2vh;
     height: 68vh;
+    overflow: hidden;
     backdrop-filter: blur(20px);
   }
 
@@ -185,8 +186,8 @@
   }
 
   .qr-box img {
-    width: 46vh;
-    height: 46vh;
+    width: 40vh;
+    height: 40vh;
     display: block;
   }
 
@@ -445,40 +446,6 @@
     opacity: 0.95;
   }
 
-  .game-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.58);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-
-  .game-overlay.visible {
-    display: flex;
-  }
-
-  .game-overlay-card {
-    width: min(780px, 85vw);
-    background: #0f172a;
-    border: 2px solid rgba(255,255,255,0.12);
-    border-radius: 28px;
-    padding: 34px 30px;
-    text-align: center;
-  }
-
-  .game-overlay-title {
-    font-size: clamp(34px, 3vw, 54px);
-    font-weight: bold;
-    margin-bottom: 14px;
-  }
-
-  .game-overlay-sub {
-    font-size: clamp(20px, 1.8vw, 30px);
-    opacity: 0.9;
-    line-height: 1.35;
-  }
 </style>
 </head>
 <body>
@@ -624,13 +591,6 @@
     </div>
   </div>
 
-  <div class="game-overlay" id="gameOverlay">
-    <div class="game-overlay-card">
-      <div class="game-overlay-title" id="gameOverlayTitle">Game Paused</div>
-      <div class="game-overlay-sub" id="gameOverlaySub">Resume on controller.</div>
-    </div>
-  </div>
-
 <script>
 const enterHint = document.getElementById("enterHint");
 const controllerStatus = document.getElementById("controllerStatus");
@@ -643,9 +603,6 @@ const onboardingScreen = document.getElementById("onboardingScreen");
 const menuScreen = document.getElementById("menuScreen");
 const gamesScreen = document.getElementById("gamesScreen");
 const settingsScreen = document.getElementById("settingsScreen");
-const gameOverlay = document.getElementById("gameOverlay");
-const gameOverlayTitle = document.getElementById("gameOverlayTitle");
-const gameOverlaySub = document.getElementById("gameOverlaySub");
 
 const menuCards = Array.from(document.querySelectorAll(".menu-card"));
 const menuActionText = document.getElementById("menuActionText");
@@ -669,7 +626,6 @@ let selectedGameIndex = 0;
 let selectedSettingsIndex = 0;
 let games = [];
 
-let gamePaused = false;
 
 const HOME_TIMEOUT_MS = 2 * 60 * 1000;
 
@@ -724,23 +680,8 @@ function connectWebSocket() {
       return;
     }
 
-    if (data.type === 'pause_state') {
-      gamePaused = !!data.paused;
-      gameOverlay.classList.toggle('visible', gamePaused);
-      return;
-    }
-
-    if (data.type === 'system_action') {
-      if (data.action === 'resume') {
-        gamePaused = false;
-        gameOverlay.classList.remove('visible');
-        ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
-      }
-
-      if (data.action === 'return_home') {
-        ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
-        window.location.href = "/";
-      }
+    // pause_state and system_action are only relevant on game pages
+    if (data.type === 'pause_state' || data.type === 'system_action') {
       return;
     }
 
@@ -893,22 +834,17 @@ function launchSelectedGame() {
   if (!games.length) return;
   const game = games[selectedGameIndex];
 
-  gameOverlay.classList.remove('visible');
-  ws.send(JSON.stringify({ type: 'pause_state', paused: false }));
-
-  const gameControllerUrl = game.controllerEntry
-    ? `${location.protocol}//${location.host}${game.controllerEntry}`
-    : `${location.protocol}//${location.host}/controller.html`;
-
-  fetch('/qr')
+  // Tell controllers to load the right controls for this game
+  fetch(`/game-controller/${game.id}`)
     .then(res => res.json())
+    .then(data => {
+      ws.send(JSON.stringify({ type: 'load_controls', url: data.url, id: data.id }));
+    })
     .catch(() => {});
 
   setTimeout(() => {
     window.location.href = game.entry;
-  }, 60);
-
-  console.log('Game controller URL:', gameControllerUrl);
+  }, 200);
 }
 
 function activateMenuItem() {

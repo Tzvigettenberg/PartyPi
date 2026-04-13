@@ -1,8 +1,0 @@
-{
-  "id": "table-smash",
-  "name": "Table Smash",
-  "description": "Tilt to move and swing to return the ball.",
-  "controls": "gyro",
-  "entry": "/games/table-smash/index.html",
-  "controllerPreset": "gyro"
-}

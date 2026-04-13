@@ -1,0 +1,139 @@
+<style>
+  .gyro-wrap {
+    width: min(100%, 400px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .gyro-hint {
+    font-size: 15px;
+    opacity: 0.7;
+    text-align: center;
+    line-height: 1.35;
+    padding: 0 10px;
+  }
+
+  .gyro-btn {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .gyro-btn.enable {
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+  }
+
+  .gyro-btn.recenter {
+    background: rgba(255,255,255,0.1);
+  }
+
+  .gyro-status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .gyro-status .label {
+    font-size: 12px;
+    opacity: 0.5;
+    margin-bottom: 4px;
+  }
+
+  .gyro-status .val {
+    font-size: 18px;
+    font-weight: 700;
+  }
+</style>
+
+<div class="gyro-wrap">
+  <div class="gyro-hint">Enable motion, hold your phone flat, then tap Recenter. Tilt to control.</div>
+
+  <button class="gyro-btn enable" id="gyroEnableBtn">Enable Motion</button>
+  <button class="gyro-btn recenter" id="gyroRecenterBtn">Recenter</button>
+
+  <div class="gyro-status">
+    <div>
+      <div class="label">Status</div>
+      <div class="val" id="gyroStatusText">Waiting</div>
+    </div>
+    <div>
+      <div class="label">Tilt</div>
+      <div class="val" id="gyroGammaText">0.0</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const send = window.partypi.send;
+  const enableBtn = document.getElementById('gyroEnableBtn');
+  const recenterBtn = document.getElementById('gyroRecenterBtn');
+  const statusText = document.getElementById('gyroStatusText');
+  const gammaText = document.getElementById('gyroGammaText');
+
+  let motionEnabled = false;
+  let gamma = 0;
+  let gammaCenter = 0;
+
+  function sendGyro() {
+    send({
+      type: 'gyro',
+      motionEnabled,
+      gamma,
+      centeredGamma: gamma - gammaCenter
+    });
+  }
+
+  function handleOrientation(event) {
+    gamma = typeof event.gamma === 'number' ? event.gamma : 0;
+    gammaText.textContent = (gamma - gammaCenter).toFixed(1);
+    sendGyro();
+  }
+
+  async function enableMotion() {
+    try {
+      let granted = true;
+
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const result = await DeviceOrientationEvent.requestPermission();
+        granted = result === 'granted';
+      }
+
+      if (!granted) {
+        statusText.textContent = 'Denied';
+        return;
+      }
+
+      motionEnabled = true;
+      statusText.textContent = 'Active';
+      window.addEventListener('deviceorientation', handleOrientation);
+      sendGyro();
+    } catch (err) {
+      statusText.textContent = 'Error';
+    }
+  }
+
+  function recenter() {
+    gammaCenter = gamma;
+    gammaText.textContent = '0.0';
+    sendGyro();
+  }
+
+  enableBtn.addEventListener('click', enableMotion);
+  enableBtn.addEventListener('touchend', (e) => { e.preventDefault(); enableMotion(); }, { passive: false });
+  recenterBtn.addEventListener('click', recenter);
+  recenterBtn.addEventListener('touchend', (e) => { e.preventDefault(); recenter(); }, { passive: false });
+})();
+</script>

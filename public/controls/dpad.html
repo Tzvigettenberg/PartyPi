@@ -1,0 +1,48 @@
+<div class="dpad-wrap">
+  <div class="dpad-hint">Use D-pad to navigate</div>
+
+  <div class="dpad" id="dpadWrap">
+    <button class="up" data-dir="up">▲</button>
+    <button class="left" data-dir="left">◀</button>
+    <button class="center-btn" data-dir="enter">OK</button>
+    <button class="right" data-dir="right">▶</button>
+    <button class="down" data-dir="down">▼</button>
+  </div>
+
+  <div class="dpad-status" id="dpadStatus"></div>
+</div>
+
+<script>
+(function() {
+  const buttons = document.querySelectorAll('.dpad button');
+
+  buttons.forEach(button => {
+    const dir = button.dataset.dir;
+
+    button.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      dpadPress(dir, button);
+    }, { passive: false });
+
+    button.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      dpadRelease();
+    }, { passive: false });
+
+    button.addEventListener('touchcancel', (e) => {
+      e.preventDefault();
+      dpadRelease();
+    }, { passive: false });
+
+    button.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      dpadPress(dir, button);
+    });
+
+    button.addEventListener('mouseup', (e) => {
+      e.preventDefault();
+      dpadRelease();
+    });
+  });
+})();
+</script>

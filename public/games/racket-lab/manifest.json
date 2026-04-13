@@ -1,8 +1,0 @@
-{
-  "id": "racket-lab",
-  "name": "Racket Lab",
-  "description": "Wii-style tennis swing prototype with fake 3D incoming balls.",
-  "controls": "gyro",
-  "entry": "/games/racket-lab/index.html",
-  "controllerPreset": "gyro"
-}
