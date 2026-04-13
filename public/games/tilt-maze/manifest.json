@@ -1,0 +1,8 @@
+{
+  "id": "tilt-maze",
+  "name": "Tilt Maze",
+  "description": "Tilt your phone to guide a ball through the maze.",
+  "controls": "gyro",
+  "entry": "/games/tilt-maze/index.html",
+  "controllerPreset": "gyro"
+}
