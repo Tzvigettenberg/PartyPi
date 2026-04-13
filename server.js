@@ -63,6 +63,7 @@ const PLAY_CONNECTION_NAME = 'PartyPiHotspot';
 const DEV_CONNECTION_NAME = 'netplan-wlan0-HOTWiFi-DF89';
 
 let lastPauseState = { type: 'pause_state', paused: false };
+let lastControls = { type: 'load_controls', url: '/controls/dpad.html', id: 'dpad' };
 
 app.use(express.json());
 
@@ -272,6 +273,7 @@ function broadcastClientCount() {
 function attachSocketHandler(socketServer) {
   socketServer.on('connection', (ws) => {
     ws.send(JSON.stringify(lastPauseState));
+    ws.send(JSON.stringify(lastControls));
 
     // Let everyone know a new client connected
     setTimeout(broadcastClientCount, 100);
@@ -286,14 +288,19 @@ function attachSocketHandler(socketServer) {
           lastPauseState = data;
         }
 
+        if (data && data.type === 'load_controls') {
+          lastControls = data;
+        }
+
         // ── Server-side return home handling ──
         // When any client sends return_home, the SERVER broadcasts
         // a navigate command. This works even if the game page is broken
         // because partypi-system.js (injected into every page) handles it.
         if (data && data.type === 'system_action' && data.action === 'return_home') {
           lastPauseState = { type: 'pause_state', paused: false };
+          lastControls = { type: 'load_controls', url: '/controls/dpad.html', id: 'dpad' };
           broadcastJSON({ type: 'navigate', url: '/' });
-          broadcastJSON({ type: 'load_controls', url: '/controls/dpad.html', id: 'dpad' });
+          broadcastJSON(lastControls);
           broadcastJSON({ type: 'pause_state', paused: false });
           return;
         }

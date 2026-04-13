@@ -123,7 +123,7 @@
       }
 
       if (!granted) {
-        statusText.textContent = 'Denied';
+        statusText.textContent = 'Denied — close tab & reopen';
         return;
       }
 
@@ -132,7 +132,7 @@
       window.addEventListener('deviceorientation', handleOrientation);
       sendGyro();
     } catch (err) {
-      statusText.textContent = 'Error';
+      statusText.textContent = 'Denied — close tab & reopen';
     }
   }
 
