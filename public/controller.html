@@ -58,6 +58,36 @@
   .conn-dot.connected { background: #22c55e; }
   .conn-dot.disconnected { background: #ef4444; }
 
+  /* ── Default reconnect screen (visible before JS connects) ── */
+  .default-reconnect {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .default-reconnect-sub {
+    font-size: 15px;
+    opacity: 0.5;
+    line-height: 1.4;
+  }
+
+  .default-reconnect-btn {
+    width: min(85%, 280px);
+    height: 52px;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    color: white;
+    background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
 
   .pause-btn {
     height: 36px;
@@ -235,8 +265,15 @@
     </div>
   </div>
 
-  <!-- Game controls get loaded here -->
-  <div id="gameControls"></div>
+  <!-- Game controls — default content is a reconnect button.
+       When JS connects, loadControls() replaces this with actual controls.
+       If the page is dead/frozen, user still sees this button. -->
+  <div id="gameControls">
+    <div class="default-reconnect">
+      <div class="default-reconnect-sub">Connecting...</div>
+      <button class="default-reconnect-btn" onclick="window.location.reload()">Refresh</button>
+    </div>
+  </div>
 </div>
 
 <!-- Pause overlay -->
