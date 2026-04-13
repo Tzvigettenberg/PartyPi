@@ -58,6 +58,30 @@
   .conn-dot.connected { background: #22c55e; }
   .conn-dot.disconnected { background: #ef4444; }
 
+  .reconnect-btn {
+    display: none;
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    background: #ef4444;
+    color: white;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    animation: pulse-reconnect 1.5s ease-in-out infinite;
+  }
+
+  .reconnect-btn.visible {
+    display: block;
+  }
+
+  @keyframes pulse-reconnect {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
   .pause-btn {
     height: 36px;
     padding: 0 16px;
@@ -285,6 +309,7 @@
     <div class="brand">PartyPi</div>
     <div class="topbar-right">
       <div class="conn-dot" id="connDot"></div>
+      <button class="reconnect-btn" id="topReconnectBtn">Reconnect</button>
       <button class="pause-btn" id="pauseBtn">Menu</button>
     </div>
   </div>
@@ -320,7 +345,7 @@ let ws;
 let wsReconnectTimer = null;
 let retryCount = 0;
 let hasEverConnected = false;
-let lastServerTime = Date.now(); // tracks last message from server
+let isConnected = false;
 
 const connDot = document.getElementById('connDot');
 const pauseBtn = document.getElementById('pauseBtn');
@@ -330,17 +355,18 @@ const homeBtn = document.getElementById('homeBtn');
 const gameControls = document.getElementById('gameControls');
 const disconnectOverlay = document.getElementById('disconnectOverlay');
 const reconnectBtn = document.getElementById('reconnectBtn');
+const topReconnectBtn = document.getElementById('topReconnectBtn');
 
 let pauseMode = false;
 let currentControlsId = null;
 
-function showDisconnected() {
-  connDot.className = 'conn-dot disconnected';
-  disconnectOverlay.classList.add('visible');
-}
-
-function hideDisconnected() {
-  disconnectOverlay.classList.remove('visible');
+function setConnected(value) {
+  isConnected = value;
+  connDot.className = 'conn-dot ' + (value ? 'connected' : 'disconnected');
+  topReconnectBtn.classList.toggle('visible', !value && hasEverConnected);
+  if (value) {
+    disconnectOverlay.classList.remove('visible');
+  }
 }
 
 function connectWebSocket() {
@@ -349,14 +375,12 @@ function connectWebSocket() {
   }
 
   connDot.className = 'conn-dot'; // yellow/connecting
-  try { ws = new WebSocket(wsUrl); } catch(e) { showDisconnected(); return; }
+  try { ws = new WebSocket(wsUrl); } catch(e) { setConnected(false); return; }
 
   ws.onopen = () => {
     hasEverConnected = true;
     retryCount = 0;
-    lastServerTime = Date.now();
-    connDot.className = 'conn-dot connected';
-    hideDisconnected();
+    setConnected(true);
     if (wsReconnectTimer) {
       clearTimeout(wsReconnectTimer);
       wsReconnectTimer = null;
@@ -364,15 +388,12 @@ function connectWebSocket() {
   };
 
   ws.onclose = () => {
+    setConnected(false);
     retryCount++;
     // First visit, cert issue — auto-reload after 3 fails
     if (!hasEverConnected && retryCount === 3) {
       window.location.reload();
       return;
-    }
-    // If we were previously connected, show disconnect overlay
-    if (hasEverConnected) {
-      showDisconnected();
     }
     // Keep trying in background (works on HTTP/dev mode)
     if (!wsReconnectTimer) {
@@ -387,10 +408,9 @@ function connectWebSocket() {
   ws.onerror = () => { try { ws.close(); } catch(e) {} };
 
   ws.onmessage = (event) => {
-    lastServerTime = Date.now(); // any message = server is alive
     const data = JSON.parse(event.data);
 
-    if (data.type === 'ping') return; // heartbeat, just updates lastServerTime
+    if (data.type === 'ping') return; // heartbeat, ignore
 
     if (data.type === 'reload') {
       window.location.reload();
@@ -409,19 +429,60 @@ function connectWebSocket() {
   };
 }
 
-// ── Heartbeat check ──
-// iOS Safari kills WebSockets silently when backgrounded — readyState
-// still says OPEN but the connection is dead. This catches that.
-// Server pings every 5s, so if we haven't heard in 12s, we're dead.
-setInterval(() => {
+// ── iOS Safari workaround ──
+// When phone sleeps, iOS kills the WebSocket but doesn't fire onclose.
+// When the user comes back, the page is in a zombie state.
+// We use BOTH visibilitychange and a focus listener as belt-and-suspenders.
+// If we detect we're back and the WS looks dead, show reconnect button + overlay.
+function checkAndShowReconnect() {
   if (!hasEverConnected) return;
-  const silent = Date.now() - lastServerTime;
-  if (silent > 12000) {
-    // Force-close the zombie WebSocket so onclose fires
-    if (ws) { try { ws.close(); } catch(e) {} }
-    showDisconnected();
+  // Check if WS is actually dead (readyState might lie on iOS, but try anyway)
+  if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+    setConnected(false);
+    disconnectOverlay.classList.add('visible');
+    return;
   }
-}, 3000);
+  // WS says it's open but might be a zombie — show reconnect button in top bar
+  // so user always has a way out. It'll hide if a real message comes through.
+  topReconnectBtn.classList.add('visible');
+  connDot.className = 'conn-dot'; // yellow
+  // Try a test: if we get a ping in the next few seconds, we're fine
+  let gotResponse = false;
+  const origHandler = ws.onmessage;
+  const testTimeout = setTimeout(() => {
+    if (!gotResponse) {
+      // No response — connection is dead
+      setConnected(false);
+      disconnectOverlay.classList.add('visible');
+    }
+    ws.onmessage = origHandler;
+  }, 6000);
+  ws.onmessage = (event) => {
+    gotResponse = true;
+    clearTimeout(testTimeout);
+    // Connection is alive! Hide reconnect button
+    topReconnectBtn.classList.remove('visible');
+    connDot.className = 'conn-dot connected';
+    ws.onmessage = origHandler;
+    // Still process this message
+    origHandler(event);
+  };
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    setTimeout(checkAndShowReconnect, 300);
+  }
+});
+window.addEventListener('focus', () => {
+  setTimeout(checkAndShowReconnect, 300);
+});
+// Also check on touch — if user taps the screen, they're back
+document.addEventListener('touchstart', function onFirstTouch() {
+  if (!isConnected && hasEverConnected) {
+    checkAndShowReconnect();
+  }
+}, { passive: true });
 
 // ── Send data to server/TV ──
 function send(obj) {
@@ -532,9 +593,12 @@ document.addEventListener('touchend', (e) => {
   }
 }, { passive: false });
 
-// ── Reconnect button ──
-reconnectBtn.addEventListener('click', (e) => { e.preventDefault(); window.location.reload(); });
-reconnectBtn.addEventListener('touchend', (e) => { e.preventDefault(); window.location.reload(); }, { passive: false });
+// ── Reconnect buttons (overlay + top bar) ──
+function doReconnect(e) { e.preventDefault(); window.location.reload(); }
+reconnectBtn.addEventListener('click', doReconnect);
+reconnectBtn.addEventListener('touchend', doReconnect, { passive: false });
+topReconnectBtn.addEventListener('click', doReconnect);
+topReconnectBtn.addEventListener('touchend', doReconnect, { passive: false });
 
 // ── Start ──
 connectWebSocket();
