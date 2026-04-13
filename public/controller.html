@@ -51,12 +51,12 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #fbbf24;
+    background: #ef4444;
     transition: background 0.3s ease;
   }
 
+  .conn-dot.connecting { background: #fbbf24; }
   .conn-dot.connected { background: #22c55e; }
-  .conn-dot.disconnected { background: #ef4444; }
 
   /* ── Default reconnect screen (visible before JS connects) ── */
   .default-reconnect {
@@ -90,6 +90,7 @@
   }
 
   .pause-btn {
+    display: none;
     height: 36px;
     padding: 0 16px;
     font-size: 14px;
@@ -100,6 +101,10 @@
     color: white;
     -webkit-tap-highlight-color: transparent;
     font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .conn-dot.connected ~ .pause-btn {
+    display: block;
   }
 
   /* ── Game controls area (filled by fragments) ── */
@@ -270,7 +275,7 @@
        If the page is dead/frozen, user still sees this button. -->
   <div id="gameControls">
     <div class="default-reconnect">
-      <div class="default-reconnect-sub">Connecting...</div>
+      <div class="default-reconnect-sub">Connection lost</div>
       <button class="default-reconnect-btn" onclick="window.location.reload()">Refresh</button>
     </div>
   </div>
@@ -323,10 +328,10 @@ function connectWebSocket() {
     try { ws.onclose = null; ws.onerror = null; ws.close(); } catch(e) {}
   }
 
-  connDot.className = 'conn-dot'; // yellow = trying
+  connDot.className = 'conn-dot connecting'; // yellow = trying
 
   try { ws = new WebSocket(wsUrl); } catch(e) {
-    connDot.className = 'conn-dot disconnected';
+    connDot.className = 'conn-dot'; // red (default)
     return;
   }
 
@@ -340,7 +345,7 @@ function connectWebSocket() {
   };
 
   ws.onclose = () => {
-    connDot.className = 'conn-dot disconnected';
+    connDot.className = 'conn-dot'; // red (default)
     retryCount++;
     softRetries++;
 
